@@ -1,0 +1,17 @@
+PATH
+  remote: .
+  specs:
+    benchmark_quantifiers (0.1.0)
+
+GEM
+  remote: https://rubygems.org/
+  specs:
+    rake (10.4.2)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  benchmark_quantifiers!
+  bundler (~> 1.8)
+  rake (~> 10.0)
