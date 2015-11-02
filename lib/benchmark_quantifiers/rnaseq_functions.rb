@@ -24,8 +24,12 @@ module RNAseqFunctions
   #end
 
   # Fragments per kilobase of exon per million reads mapped
+  def RNAseqFunctions.fpkm_NOPE(raw_count, effective_length, number_of_assigned_reads)
+    (raw_count.to_f / (effective_length/10**3) / (number_of_assigned_reads.to_f/10**6)).round(4)
+  end
+
   def RNAseqFunctions.fpkm(raw_count, effective_length, number_of_assigned_reads)
-    (raw_count.to_f / number_of_assigned_reads.to_f * effective_length * (10.0 ** 9)).round(4)
+    ((raw_count.to_f / (number_of_assigned_reads.to_f * effective_length)) * (10.0 ** 9)).round(4)
   end
 
   def RNAseqFunctions.tpm_from_fpkm(fpkm_current, fpkm_sum_over_all_transcripts)
