@@ -28,6 +28,6 @@ class TestRNAseqFunctions < Minitest::Test
   end
 
   def test_that_will_be_skipped
-    #skip "test this later"
+    skip "test this later"
   end
 end
