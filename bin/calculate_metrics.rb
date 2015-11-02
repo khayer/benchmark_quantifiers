@@ -13,7 +13,7 @@ ens_lengths = {}
 File.open("files/transcript_length.txt").each do |line|
   line.chomp!
   next if line =~ /^GENEID/
-  gene_id, enstrans, ensg_id, length = line.split("\t")
+  gene_id, enstrans, ensg_id, length, num_exon = line.split("\t")
   gene_to_ens[gene_id] = enstrans
   ensg_to_enstrans[ensg_id] ||= []
   ensg_to_enstrans[ensg_id] << enstrans
@@ -72,11 +72,11 @@ end
 puts tpm_per_transcript
 
 out_file = File.open("files/transcript_metrics_ENS.PLD.txt", "w")
-out_file.puts "GENEID\ttrans_id\tgene_id\tlength\teffective_length\tFPKM\tTPM"
+out_file.puts "GENEID\ttrans_id\tgene_id\tlength\t#exons\teffective_length\tFPKM\tTPM"
 File.open("files/transcript_length.txt").each do |line|
   line.chomp!
   next if line =~ /^GENEID/
-  gene_id, enstrans, ensg_id, length = line.split("\t")
+  gene_id, enstrans, ensg_id, length, num_exon = line.split("\t")
   if effective_length_per_transcript[enstrans]
     out_file.puts "#{line}\t#{effective_length_per_transcript[enstrans]}\t#{fpkm_per_transcript[enstrans]}\t#{tpm_per_transcript[enstrans]}"
   else

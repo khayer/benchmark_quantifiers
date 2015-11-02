@@ -23,7 +23,7 @@ class TestRNAseqFunctions < Minitest::Test
 
   def test_fpkm
     l = RNAseqFunctions.fpkm(80, @effective_length, @number_of_assigned_reads)
-    assert_equal(2715040.0, l)
+    assert_equal(0.3683, l)
   end
 
   def test_that_will_be_skipped
