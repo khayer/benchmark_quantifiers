@@ -1,7 +1,7 @@
 module RNAseqFunctions
   # FLD = fragment length distribution
   def RNAseqFunctions.effective_length(transcript_length, mean_FLD)
-    transcript_length - mean_FLD.to_f + 1.0
+    (transcript_length - mean_FLD.to_f + 1.0).round(4)
   end
 
   def RNAseqFunctions.effective_count(raw_count, transcript_length, effective_length)
