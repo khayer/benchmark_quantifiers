@@ -32,4 +32,36 @@ module Functions
   def Functions.squared_pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)
     (Functions.pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)**2).round(4)
   end
+
+  def Functions.compare(truth, estimated)
+    all_trans_estimates = []
+    all_truth_estimates = []
+    estimated.each_pair do |key,value|
+      next unless truth[key]
+      all_trans_estimates << value
+      all_truth_estimates << truth[key]
+    end
+    rmse = Functions.root_mean_squared_error(all_trans_estimates, all_truth_estimates)
+    pcc = Functions.pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)
+    spcc = Functions.squared_pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)
+    [rmse, pcc, spcc]
+  end
+
+  def Functions.print(truth, estimated)
+    puts "ENSTID\tTRUTH\tESTIMATED"
+    estimated.each_pair do |key,value|
+      next unless truth[key]
+      puts "#{key}\t#{truth[key]}\t#{value}"
+    end
+  end
+
+  def Functions.replace_geneids(geneid_to_transid, estimated)
+    estimated_new = {}
+    estimated.each_pair do |key, value|
+      estimated_new[geneid_to_transid[key]] = value
+    end
+    estimated_new
+  end
+
+
 end
