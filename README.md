@@ -2,6 +2,14 @@
 
 TODO
 
+## Functions
+
+### Pearson Correlation Coefficient
+
+Pearson Correlation Coefficient $r$, where $\bar{x}, \bar{y}$ are the average of vector $x$ and vector $y$ respectively.
+ 
+$$r = \frac{\sum_i (x_i - \bar{x})(y_i-\bar{y})}{\sqrt{\sum_i(x_i - \bar{x})^2 \sum_i(y_i-\bar{y})^2}}$$
+
 ## Installation
 
 Add this line to your application's Gemfile:
