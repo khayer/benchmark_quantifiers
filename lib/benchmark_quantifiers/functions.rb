@@ -59,10 +59,18 @@ module Functions
   def Functions.compare(truth, estimated)
     all_trans_estimates = []
     all_truth_estimates = []
+    truth_copy = truth.dup
     estimated.each_pair do |key,value|
       next unless truth[key]
+      $logger.debug truth[key]
       all_trans_estimates << value
       all_truth_estimates << truth[key]
+      $logger.debug key
+      truth_copy.delete(key)
+    end
+    truth_copy.each_pair do |key,value|
+      all_trans_estimates << 0.0
+      all_truth_estimates << value
     end
     rmse = Functions.root_mean_squared_error(all_trans_estimates, all_truth_estimates)
     pcc = Functions.pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)
@@ -72,10 +80,14 @@ module Functions
   end
 
   def Functions.print(truth, estimated)
+    truth_copy = truth.dup
     puts "ENSTID\tTRUTH\tESTIMATED"
     estimated.each_pair do |key,value|
       next unless truth[key]
       puts "#{key}\t#{truth[key]}\t#{value}"
+    end
+    truth_copy.each_pair do |key,value|
+      puts "#{key}\t#{value}\t0.0"
     end
   end
 
