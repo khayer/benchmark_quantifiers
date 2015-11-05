@@ -106,7 +106,7 @@ def run(argv)
     $logger.debug("Kallisto")
     estimated = Kallisto.new(estimated)
     estimated.read_file()
-    estimated.tpm = Functions.replace_geneids(truth.geneid_to_transid, estimated.tpm)
+    #estimated.tpm = Functions.replace_geneids(truth.geneid_to_transid, estimated.tpm)
     tpm = true
   when :rsem
     $logger.debug("RSEM")
