@@ -1,4 +1,16 @@
 module Functions
+
+  def Functions.median(array)
+    sorted = array.sort
+    len = sorted.length
+    ((sorted[(len - 1) / 2] + sorted[len / 2]) / 2.0).round(4)
+  end
+
+  # https://en.wikipedia.org/wiki/Relative_change_and_difference
+  def Functions.relative_difference(estimate,truth)
+    ((truth-estimate).abs/((truth.abs+estimate.abs)/2)).round(4)
+  end
+
   def Functions.root_mean_squared_error(all_trans_estimates, all_truth_estimates)
     sum = 0
     all_truth_estimates.each_with_index do |truth,i|
@@ -33,6 +45,14 @@ module Functions
     (Functions.pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)**2).round(4)
   end
 
+  def Functions.median_relative_difference(all_trans_estimates, all_truth_estimates)
+    tmp = []
+    all_trans_estimates.each_with_index do |trans, i|
+      tmp << Functions.relative_difference(trans,all_truth_estimates[i])
+    end
+    Functions.median(tmp)
+  end
+
   def Functions.compare(truth, estimated)
     all_trans_estimates = []
     all_truth_estimates = []
@@ -44,7 +64,8 @@ module Functions
     rmse = Functions.root_mean_squared_error(all_trans_estimates, all_truth_estimates)
     pcc = Functions.pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)
     spcc = Functions.squared_pearson_correlation_coefficient(all_trans_estimates, all_truth_estimates)
-    [rmse, pcc, spcc]
+    mrd = Functions.median_relative_difference(all_trans_estimates, all_truth_estimates)
+    [rmse, pcc, spcc, mrd]
   end
 
   def Functions.print(truth, estimated)

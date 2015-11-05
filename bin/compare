@@ -17,6 +17,7 @@ require "optparse"
 $logger = Logger.new(STDERR)
 $algorithms = [
   :cufflinks,
+  :express,
   :kallisto,
   :pennseq,
   :rsem
@@ -96,6 +97,11 @@ def run(argv)
     estimated = Cufflinks.new(estimated)
     estimated.read_file()
     fpkm = true
+  when :express
+    $logger.debug("eXpress")
+    estimated = Express.new(estimated)
+    estimated.read_file()
+    fpkm = true
   when :kallisto
     $logger.debug("Kallisto")
     estimated = Kallisto.new(estimated)
@@ -115,14 +121,14 @@ def run(argv)
   end
 
   if fpkm
-    rmse, pcc, spcc = Functions.compare(truth.fpkm, estimated.fpkm)
+    rmse, pcc, spcc, mrd = Functions.compare(truth.fpkm, estimated.fpkm)
     if options[:print]
       Functions.print(truth.fpkm, estimated.fpkm)
     end
   end
 
   if tpm
-    rmse, pcc, spcc = Functions.compare(truth.tpm, estimated.tpm)
+    rmse, pcc, spcc, mrd = Functions.compare(truth.tpm, estimated.tpm)
     if options[:print]
       Functions.print(truth.tpm, estimated.tpm)
     end
@@ -130,6 +136,7 @@ def run(argv)
   $logger.info("rmse #{rmse}")
   $logger.info("pcc #{pcc}")
   $logger.info("spcc #{spcc}")
+  $logger.info("mrd #{mrd}")
   $logger.info("Hallo")
   $logger.debug("DEBUG")
   $logger.debug(options)

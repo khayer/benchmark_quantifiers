@@ -9,6 +9,7 @@ require "benchmark_quantifiers/cufflinks"
 require "benchmark_quantifiers/pennseq"
 require "benchmark_quantifiers/rsem"
 require "benchmark_quantifiers/metrics"
+require "benchmark_quantifiers/express"
 #require "benchmark_quantifiers/logging"
 #include Logging
 
