@@ -85,6 +85,7 @@ module Functions
     estimated.each_pair do |key,value|
       next unless truth[key]
       puts "#{key}\t#{truth[key]}\t#{value}"
+      truth_copy.delete(key)
     end
     truth_copy.each_pair do |key,value|
       puts "#{key}\t#{value}\t0.0"
