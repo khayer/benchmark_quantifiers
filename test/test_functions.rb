@@ -36,6 +36,8 @@ class TestRNAseqFunctions < Minitest::Test
   def test_relative_difference
     l = Functions.relative_difference(100.0,105.0)
     assert_equal(0.0488,l)
+    l = Functions.relative_difference(0.0,0.0)
+    assert_equal(0.0,l)
   end
 
   def test_median

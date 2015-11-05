@@ -1,6 +1,7 @@
 module Functions
 
   def Functions.median(array)
+    #$logger.debug("#{array}")
     sorted = array.sort
     len = sorted.length
     ((sorted[(len - 1) / 2] + sorted[len / 2]) / 2.0).round(4)
@@ -8,6 +9,8 @@ module Functions
 
   # https://en.wikipedia.org/wiki/Relative_change_and_difference
   def Functions.relative_difference(estimate,truth)
+    return 0 if estimate == 0 && truth == 0
+    #$logger.debug("#{estimate} #{truth}")
     ((truth-estimate).abs/((truth.abs+estimate.abs)/2)).round(4)
   end
 
