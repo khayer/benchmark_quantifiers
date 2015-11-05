@@ -18,3 +18,12 @@ rcorr(all_truth_estimates,all_trans_estimates, type="pearson")
 
 
 RMSE <- sqrt(mean((all_trans_estimates-all_truth_estimates)^2))
+
+scaled_error <- function(estimate, truth) {
+  2 *(estimate - truth)  / (estimate + truth)
+}
+
+med_scaled_err = median(abs(scaled_error(all_trans_estimates, all_truth_estimates)))
+
+mean(abs(scaled_error(all_trans_estimates, all_truth_estimates))) 
+                        
