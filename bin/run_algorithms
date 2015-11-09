@@ -193,7 +193,7 @@ def run(argv)
   for d in dataset
     Dir.chdir current_dir
     $logger.debug "Current dataset #{d}"
-    $datasets[d] =~ /_EFFECTS_/  ? effected = true : effected = false
+    $datasets[d] =~ /_EFFECTS/  ? effected = true : effected = false
     $logger.debug "Effected? #{effected}"
     options[:data_path] = "#{tree_base}/#{$datasets[d]}"
     case algorithm
