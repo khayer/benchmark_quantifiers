@@ -186,9 +186,12 @@ def run(argv)
   for d in dataset
     raise "Dataset #{d} is not supported; but there is #{$datasets.keys.join(", ")}" unless $datasets.keys.include?(d)
   end
+  current_dir = Dir.pwd
+
   $logger.debug "First phase done!"
   tree_base = argv[2]
   for d in dataset
+    Dir.chdir current_dir
     $logger.debug "Current dataset #{d}"
     $datasets[d] =~ /_EFFECTS_/  ? effected = true : effected = false
     $logger.debug "Effected? #{effected}"
@@ -281,28 +284,24 @@ def run(argv)
       estimated.read_file()
       fpkm = true
     end
+    options[:align_bam] = nil
   end
-  exit
-  if fpkm
-    rmse, pcc, spcc, mrd = Functions.compare(truth.fpkm, estimated.fpkm)
-    if options[:print]
-      Functions.print(truth.fpkm, estimated.fpkm)
-    end
-  end
+  #exit
+  #if fpkm
+  #  rmse, pcc, spcc, mrd = Functions.compare(truth.fpkm, estimated.fpkm)
+  #  if options[:print]
+  #    Functions.print(truth.fpkm, estimated.fpkm)
+  #  end
+  #end
+#
+  #if tpm
+  #  rmse, pcc, spcc, mrd = Functions.compare(truth.tpm, estimated.tpm)
+  #  if options[:print]
+  #    Functions.print(truth.tpm, estimated.tpm)
+  #  end
+  #end
 
-  if tpm
-    rmse, pcc, spcc, mrd = Functions.compare(truth.tpm, estimated.tpm)
-    if options[:print]
-      Functions.print(truth.tpm, estimated.tpm)
-    end
-  end
-  $logger.info("rmse #{rmse}")
-  $logger.info("pcc #{pcc}")
-  $logger.info("spcc #{spcc}")
-  $logger.info("mrd #{mrd}")
-  $logger.debug("DEBUG")
-  $logger.debug(options)
-  $logger.debug(argv)
+  monitor_jobs(options[:jobs])
   $logger.info("All done!")
 end
 

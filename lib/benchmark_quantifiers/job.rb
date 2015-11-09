@@ -16,7 +16,7 @@ class Job
     begin
       l = `bjobs -l #{@jobnumber}`
     rescue Exception => e
-      $logger.error(e)
+      $logger.error("#{e}")
       $logger.error("bjobs not found!\n#{self}")
       @status = "EXIT"
       return
