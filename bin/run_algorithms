@@ -187,16 +187,18 @@ def run(argv)
     raise "Dataset #{d} is not supported; but there is #{$datasets.keys.join(", ")}" unless $datasets.keys.include?(d)
   end
   current_dir = Dir.pwd
-
-  $logger.debug "First phase done!"
   tree_base = argv[2]
+  $logger.debug "First phase done!"
+
   for d in dataset
     Dir.chdir current_dir
     $logger.debug "Current dataset #{d}"
     $datasets[d] =~ /_EFFECTS/  ? effected = true : effected = false
     $logger.debug "Effected? #{effected}"
     options[:data_path] = "#{tree_base}/#{$datasets[d]}"
+
     case algorithm
+
     when :cufflinks
       $logger.debug("Cufflinks")
       Dir.glob("#{options[:data_path]}/*").each do |p|
@@ -217,12 +219,10 @@ def run(argv)
           end
         end
       end
-
       unless options[:align_bam]
         $logger.error "Couldn't find bam_file in #{options[:data_path]}"
         next
       end
-
       options[:out_path] = "#{options[:data_path]}/cufflinks"
       begin
         Dir.mkdir(options[:out_path])
@@ -234,12 +234,10 @@ def run(argv)
           raise("Trouble creating directory, log for details.")
         end
       end
-
       if Functions.check_if_results_exist("#{options[:out_path]}/isoforms.fpkm_tracking")
         $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
         next
       end
-
       shell_file = "#{options[:out_path]}/run.sh"
       o = File.open(shell_file,"w")
       c = Cufflinks.new("dummy")
