@@ -92,7 +92,9 @@ def setup_options(args)
     :print => false,
     :data_path => nil,
     :annotation_gtf => nil,
-    :align_bam => nil
+    :align_bam => nil,
+    :out_path => nil,
+    :jobs => []
   }
 
   opt_parser = OptionParser.new do |opts|
@@ -138,6 +140,42 @@ def setup_options(args)
   options
 end
 
+def monitor_jobs(jobs)
+  while jobs.length > 0
+    sleep(5)
+    jobs.each_with_index do |job,i|
+      job.update_status()
+      case job.status
+      when "DONE"
+        $logger.info("SUCCESS #{job}")
+        jobs.delete_at(i)
+      when "EXIT"
+        $logger.error("FAILED #{job}")
+        jobs.delete_at(i)
+      end
+    end
+
+  end
+  #TODO
+end
+
+def submit(cmd, options)
+  if options[:debug]
+    $logger.debug("In submit: #{cmd}")
+    return 1234
+  else
+    begin
+      l = `#{cmd}`
+    rescue Exception => e
+      $logger.error(e)
+      $logger.error("bsub not found!#{cmd}")
+      return 1
+    end
+    num = l.split(/\W/)[2].to_i
+  end
+  num
+end
+
 def run(argv)
   options = setup_options(argv)
   options.merge!(Hash[YAML::load(File.open(argv[3])).map { |k, v| [k.to_sym, v] }])
@@ -161,33 +199,48 @@ def run(argv)
       Dir.glob("#{options[:data_path]}/*").each do |p|
         $logger.debug "p #{p}"
         next if File.directory? p
-        next unless Functions.check_if_results_exist(p)
         if p =~ /VC.ENS.#{d}.s.bam$/
+          next unless Functions.check_if_results_exist(p)
           options[:align_bam] = p
+          break
         end
-
-
-        #next if check_if_results_exist(options[:stats_path])
-        #clean_files(options[:stats_path])
-#
-        #options[:tool_result_path] = p
-        #shell_file = "#{options[:jobs_path]}/clc_statistics_#{options[:species]}_#{dataset}_#{p.split("/")[-1]}.sh".gsub(/[()]/,"")
-        #o = File.open(shell_file,"w")
-        #o.puts(erubis.evaluate(options))
-        #o.close()
-        #Dir.chdir "#{options[:jobs_path]}"
-        #$logger.debug(Dir.pwd)
-        #cmd = "bsub < #{shell_file}"
-        #jobnumber = submit(cmd,options)
-        #options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
       end
 
+      unless options[:align_bam]
+        $logger.error "Couldn't find bam_file in #{options[:data_path]}"
+        next
+      end
 
+      options[:out_path] = "#{options[:data_path]}/cufflinks"
+      begin
+        Dir.mkdir(options[:out_path])
+      rescue SystemCallError
+        if Dir.exist?(options[:out_path])
+          $logger.warn("Directory #{options[:out_path]} exists!")
+        else
+          $logger.error("Can't create directory #{options[:out_path]}!")
+          raise("Trouble creating directory, log for details.")
+        end
+      end
+
+      if Functions.check_if_results_exist("#{options[:out_path]}/isoforms.fpkm_tracking")
+        $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+        next
+      end
+
+      shell_file = "#{options[:out_path]}/run.sh"
+      o = File.open(shell_file,"w")
       c = Cufflinks.new("dummy")
       erubis = Erubis::Eruby.new(c.template)
-      puts(erubis.evaluate(options))
-      exit
-    when :express
+      o.puts(erubis.evaluate(options))
+      o.close()
+      Dir.chdir "#{options[:out_path]}"
+      $logger.debug(Dir.pwd)
+      cmd = "bsub < #{shell_file}"
+      jobnumber = submit(cmd,options)
+      options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+
+     when :express
       $logger.debug("eXpress")
       estimated = Express.new(estimated)
       estimated.read_file()
