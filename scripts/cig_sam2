@@ -7,13 +7,13 @@
 usage =<<EOF
 
   #{$0} file.cig gtf_file > out.sam
- 
+
   The script relies on this .cig format:
   seq.49999998a GENE.123 chr15 99239366 99239465 100M 99239366-99239465 + GTGCTTCCTTCCTCTGCTGCCTAACTGAGTCTGGCACAGGCTTTCTGCCTTGCCATGAGGAGGAGGTGTAGACTTGTGAGTGCTCTCTCCGCTCTGAGTG
   seq.49999998b GENE.123 chr15 99239588 99239687 100M 99239588-99239687 - CAATTAGCCCTGAGGCTCAGCCGGTCTCCTTTCCTATCCTCCCCCCAAGACTTTACCCACAGCCACCTAGTGGAGGCCCATCCGTAACAAAGGTTGATAA
 
   GTF file such as simulator_config_geneinfo_mm9-ensembl-stdchr_GTF
-  
+
   chr1 mm9_simGene exon 134227898 134229870 0.000000 + . gene_id "GENE.1"; transcript_id "GENE.1";
   chr1 mm9_simGene exon 134212703 134213049 0.000000 + . gene_id "GENE.2"; transcript_id "GENE.2";
 
@@ -36,8 +36,6 @@ if ARGV.length != 2
   exit
 end
 
-
-
 cig_file = ARGV[0]
 gtf_file = ARGV[1]
 
@@ -49,9 +47,6 @@ File.open(gtf_file).each do |line|
   id = $1
   genes[id] = fields[6]
 end
-
-#puts genes
-#exit
 
 reverse_read = false
 r1 = ""
@@ -78,7 +73,7 @@ File.open(cig_file).each do |line|
     minus_r2 = ""
     if position_r2 > position_r1
       tlen = info_r2[4].to_i - position_r1 + 1
-      minus_r2 = "-" 
+      minus_r2 = "-"
     else
       tlen = info_r1[4].to_i - position_r2 + 1
       minus_r1 = "-"
@@ -103,6 +98,4 @@ File.open(cig_file).each do |line|
     r1 = line.chomp()
     reverse_read = true
   end
-
-  
 end
