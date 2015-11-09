@@ -103,7 +103,7 @@ def run(argv)
     estimated = Express.new(estimated)
     estimated.read_file()
     fpkm = true
-  when :express
+  when :isoem
     $logger.debug("IsoEM")
     estimated = IsoEM.new(estimated)
     estimated.read_file()
