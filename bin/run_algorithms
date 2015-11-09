@@ -198,11 +198,20 @@ def run(argv)
       $logger.debug("Cufflinks")
       Dir.glob("#{options[:data_path]}/*").each do |p|
         $logger.debug "p #{p}"
-        next if File.directory? p
-        if p =~ /VC.ENS.#{d}.s.bam$/
-          next unless Functions.check_if_results_exist(p)
-          options[:align_bam] = p
-          break
+        if effected
+          next unless File.directory? p
+          if p =~ /tophat_out$/
+            next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
+            options[:align_bam] = "#{p}/accepted_hits.bam"
+            break
+          end
+        else
+          next if File.directory? p
+          if p =~ /VC.ENS.#{d}.s.bam$/
+            next unless Functions.check_if_results_exist(p)
+            options[:align_bam] = p
+            break
+          end
         end
       end
 
