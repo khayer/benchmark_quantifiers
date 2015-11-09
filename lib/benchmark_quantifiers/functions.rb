@@ -100,5 +100,10 @@ module Functions
     estimated_new
   end
 
+  def Functions.check_if_results_exist(name)
+    File.exist?(name) &&
+    !File.zero?(name)
+  end
+
 
 end

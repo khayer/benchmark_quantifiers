@@ -1,4 +1,5 @@
 require "logger"
+require "erubis"
 require "benchmark_quantifiers/version"
 require "benchmark_quantifiers/meme"
 require "benchmark_quantifiers/rnaseq_functions"
@@ -12,6 +13,7 @@ require "benchmark_quantifiers/metrics"
 require "benchmark_quantifiers/express"
 require "benchmark_quantifiers/iso_em"
 require "benchmark_quantifiers/ireckon"
+require "benchmark_quantifiers/job"
 #require "benchmark_quantifiers/logging"
 #include Logging
 

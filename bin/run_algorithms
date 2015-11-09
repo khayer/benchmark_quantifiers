@@ -1,0 +1,254 @@
+#!/usr/bin/env ruby
+require "benchmark_quantifiers"
+require "optparse"
+require 'yaml'
+#require 'logger'
+#require './logging'
+#include Logging
+#require 'optparse'
+#require "erubis"
+
+#####
+#
+#
+####
+
+# 2015/11/03 Katharina Hayer
+
+$logger = Logger.new(STDERR)
+$algorithms = [
+  :all,
+  :cufflinks,
+  :express,
+  :ireckon,
+  :isoem,
+  :kallisto,
+  :pennseq,
+  :rsem
+]
+
+$datasets = {
+  :P => "VC_ENSEMBL_PERFECT",
+  :PL => "VC_ENSEMBL_PERFECT_LONG",
+  :PS => "VC_ENSEMBL_PERFECT_SHORT",
+  :RP => "VC_ENSEMBL_RIBOZ_PERFECT",
+  :RPL => "VC_ENSEMBL_RIBOZ_PERFECT_LONG",
+  :RPS => "VC_ENSEMBL_RIBOZ_PERFECT_SHORT",
+  :RE => "VC_ENSEMBL_RIBOZ_EFFECTS",
+  :REL => "VC_ENSEMBL_RIBOZ_EFFECTS_LONG",
+  :RES => "VC_ENSEMBL_RIBOZ_EFFECTS_SHORT",
+  :PP => "VC_ENSEMBL_POLYA_PERFECT",
+  :PPL => "VC_ENSEMBL_POLYA_PERFECT_LONG",
+  :PPS => "VC_ENSEMBL_POLYA_PERFECT_SHORT",
+  :PE => "VC_ENSEMBL_POLYA_EFFECTS",
+  :PEL => "VC_ENSEMBL_POLYA_EFFECTS_LONG",
+  :PES => "VC_ENSEMBL_POLYA_EFFECTS_SHORT",
+}
+
+#Tree
+#.
+#├── VC_ENSEMBL_PERFECT
+#├── VC_ENSEMBL_PERFECT_LONG
+#│   ├── cufflinks
+#│   ├── cufflinks_abinitio
+#│   ├── cufflinks_bias
+#│   ├── express
+#│   ├── iReckon
+#│   ├── isoem
+#│   ├── kallisto
+#│   ├── kallisto_bias
+#│   └── rsem
+#├── VC_ENSEMBL_PERFECT_SHORT
+#├── VC_ENSEMBL_POLYA_EFFECTS
+#├── VC_ENSEMBL_POLYA_EFFECTS_LONG
+#├── VC_ENSEMBL_POLYA_EFFECTS_SHORT
+#├── VC_ENSEMBL_POLYA_PERFECT
+#├── VC_ENSEMBL_POLYA_PERFECT_LONG
+#├── VC_ENSEMBL_POLYA_PERFECT_SHORT
+#├── VC_ENSEMBL_RIBOZ_EFFECTS
+#├── VC_ENSEMBL_RIBOZ_EFFECTS_LONG
+#├── VC_ENSEMBL_RIBOZ_EFFECTS_SHORT
+#├── VC_ENSEMBL_RIBOZ_PERFECT
+#├── VC_ENSEMBL_RIBOZ_PERFECT_LONG
+#└── VC_ENSEMBL_RIBOZ_PERFECT_SHORT
+
+# Initialize logger
+def setup_logger(loglevel)
+  case loglevel
+  when "debug"
+    $logger.level = Logger::DEBUG
+  when "warn"
+    $logger.level = Logger::WARN
+  when "info"
+    $logger.level = Logger::INFO
+  else
+    $logger.level = Logger::ERROR
+  end
+end
+
+def setup_options(args)
+  options = {
+    :debug => false,
+    :print => false,
+    :data_path => nil,
+    :annotation_gtf => nil,
+    :align_bam => nil
+  }
+
+  opt_parser = OptionParser.new do |opts|
+    opts.banner = "\nUsage: run_algorithms [options] datasets algorithm tree_base config"
+    opts.separator ""
+    opts.separator "      datasets = Comma separated list of datasets"
+    opts.separator "                 e.g. PPL,PEL"
+    opts.separator "e.g. algorithm = cufflinks"
+    opts.separator "e.g. tree_base = /home/hayer/itmat/benchmark_quantifiers"
+    opts.separator "e.g. config    = config.yml"
+    opts.separator ""
+
+    opts.on("-d", "--debug", "Run in debug mode") do |v|
+      options[:log_level] = "debug"
+      options[:debug] = true
+    end
+
+    opts.on("-p", "--print", "print numbers to STDOUT") do |v|
+      options[:print] = true
+    end
+
+    opts.on("-v", "--verbose", "Run verbosely") do |v|
+      options[:log_level] = "info"
+    end
+    opts.separator ""
+    opts.separator "Available datasets are:"
+    opts.separator "#{$datasets.keys.join("\n")}"
+    opts.separator ""
+    opts.separator "Available algorithms are:"
+    opts.separator "#{$algorithms.join("\n")}"
+    opts.separator ""
+    #opts.separator "RunExample: bin/compare files/transcript_metrics_ENS.PLD.txt files/cufflinks.isoforms.fpkm_tracking cufflinks -d -p > tmp"
+    #opts.separator ""
+  end
+
+  args = ["-h"] if args.length == 0
+  opt_parser.parse!(args)
+  setup_logger(options[:log_level])
+  if args.length != 4
+    $logger.error("You only provided #{args.length} fields, but 4 required!")
+    raise "Please specify the input (datasets algorithm tree_base config)"
+  end
+  options
+end
+
+def run(argv)
+  options = setup_options(argv)
+  options.merge!(Hash[YAML::load(File.open(argv[3])).map { |k, v| [k.to_sym, v] }])
+  $logger.debug options
+  algorithm = argv[1].to_sym
+  raise "Algorithm #{algorithm} is not supported; but there is #{$algorithms.join(", ")}" unless $algorithms.include?(algorithm)
+  dataset = argv[0].split(",").map { |e| e.to_sym }
+  for d in dataset
+    raise "Dataset #{d} is not supported; but there is #{$datasets.keys.join(", ")}" unless $datasets.keys.include?(d)
+  end
+  $logger.debug "First phase done!"
+  tree_base = argv[2]
+  for d in dataset
+    $logger.debug "Current dataset #{d}"
+    $datasets[d] =~ /_EFFECTS_/  ? effected = true : effected = false
+    $logger.debug "Effected? #{effected}"
+    options[:data_path] = "#{tree_base}/#{$datasets[d]}"
+    case algorithm
+    when :cufflinks
+      $logger.debug("Cufflinks")
+      Dir.glob("#{options[:data_path]}/*").each do |p|
+        $logger.debug "p #{p}"
+        next if File.directory? p
+        next unless Functions.check_if_results_exist(p)
+        if p =~ /VC.ENS.#{d}.s.bam$/
+          options[:align_bam] = p
+        end
+
+
+        #next if check_if_results_exist(options[:stats_path])
+        #clean_files(options[:stats_path])
+#
+        #options[:tool_result_path] = p
+        #shell_file = "#{options[:jobs_path]}/clc_statistics_#{options[:species]}_#{dataset}_#{p.split("/")[-1]}.sh".gsub(/[()]/,"")
+        #o = File.open(shell_file,"w")
+        #o.puts(erubis.evaluate(options))
+        #o.close()
+        #Dir.chdir "#{options[:jobs_path]}"
+        #$logger.debug(Dir.pwd)
+        #cmd = "bsub < #{shell_file}"
+        #jobnumber = submit(cmd,options)
+        #options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+      end
+
+
+      c = Cufflinks.new("dummy")
+      erubis = Erubis::Eruby.new(c.template)
+      puts(erubis.evaluate(options))
+      exit
+    when :express
+      $logger.debug("eXpress")
+      estimated = Express.new(estimated)
+      estimated.read_file()
+      fpkm = true
+    when :ireckon
+      $logger.debug("IReckon")
+      estimated = IReckon.new(estimated)
+      estimated.read_file()
+      fpkm = true
+    when :isoem
+      $logger.debug("IsoEM")
+      estimated = IsoEM.new(estimated)
+      estimated.read_file()
+      fpkm = true
+    when :kallisto
+      $logger.debug("Kallisto")
+      estimated = Kallisto.new(estimated)
+      estimated.read_file()
+      #estimated.tpm = Functions.replace_geneids(truth.geneid_to_transid, estimated.tpm)
+      tpm = true
+    when :rsem
+      $logger.debug("RSEM")
+      estimated = RSEM.new(estimated)
+      estimated.read_file()
+      fpkm = true
+    when :pennseq
+      $logger.debug("pennseq")
+      estimated = Pennseq.new(estimated)
+      estimated.read_file()
+      fpkm = true
+    end
+  end
+  exit
+  if fpkm
+    rmse, pcc, spcc, mrd = Functions.compare(truth.fpkm, estimated.fpkm)
+    if options[:print]
+      Functions.print(truth.fpkm, estimated.fpkm)
+    end
+  end
+
+  if tpm
+    rmse, pcc, spcc, mrd = Functions.compare(truth.tpm, estimated.tpm)
+    if options[:print]
+      Functions.print(truth.tpm, estimated.tpm)
+    end
+  end
+  $logger.info("rmse #{rmse}")
+  $logger.info("pcc #{pcc}")
+  $logger.info("spcc #{spcc}")
+  $logger.info("mrd #{mrd}")
+  $logger.debug("DEBUG")
+  $logger.debug(options)
+  $logger.debug(argv)
+  $logger.info("All done!")
+end
+
+if __FILE__ == $0
+  run(ARGV)
+end
+
+
+
+
+

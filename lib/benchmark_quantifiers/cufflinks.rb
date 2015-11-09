@@ -18,4 +18,14 @@ class Cufflinks < FileFormats
     end
   end
 
+  def template()
+    t = "#!/bin/bash -e\n"
+    t += "#BSUB -J cufflinks_stats\n"
+    t += "#BSUB -o cufflinks_stats.%J.out\n"
+    t += "#BSUB -e cufflinks_stats.%J.error\n"
+    t += "#BSUB -n 15\n"
+    t += "#BSUB -M 30000\n"
+    t += "<%= @cufflinks %> -o <%= @data_path %>/cufflinks -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+  end
+
 end

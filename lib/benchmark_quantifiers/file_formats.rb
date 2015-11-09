@@ -9,7 +9,11 @@ class FileFormats
   attr_accessor :filename
 
   def read_file()
+    raise "Not defined yet!"
+  end
 
+  def template()
+    raise "Not defined yet!"
   end
 
 end
