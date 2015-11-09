@@ -11,6 +11,7 @@ require "benchmark_quantifiers/rsem"
 require "benchmark_quantifiers/metrics"
 require "benchmark_quantifiers/express"
 require "benchmark_quantifiers/iso_em"
+require "benchmark_quantifiers/ireckon"
 #require "benchmark_quantifiers/logging"
 #include Logging
 

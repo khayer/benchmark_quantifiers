@@ -18,6 +18,7 @@ $logger = Logger.new(STDERR)
 $algorithms = [
   :cufflinks,
   :express,
+  :ireckon,
   :isoem,
   :kallisto,
   :pennseq,
@@ -101,6 +102,11 @@ def run(argv)
   when :express
     $logger.debug("eXpress")
     estimated = Express.new(estimated)
+    estimated.read_file()
+    fpkm = true
+  when :ireckon
+    $logger.debug("IReckon")
+    estimated = IReckon.new(estimated)
     estimated.read_file()
     fpkm = true
   when :isoem
