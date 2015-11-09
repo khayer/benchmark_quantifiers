@@ -18,6 +18,7 @@ $logger = Logger.new(STDERR)
 $algorithms = [
   :cufflinks,
   :express,
+  :isoem,
   :kallisto,
   :pennseq,
   :rsem
@@ -102,6 +103,11 @@ def run(argv)
     estimated = Express.new(estimated)
     estimated.read_file()
     fpkm = true
+  when :express
+    $logger.debug("IsoEM")
+    estimated = IsoEM.new(estimated)
+    estimated.read_file()
+    fpkm = true
   when :kallisto
     $logger.debug("Kallisto")
     estimated = Kallisto.new(estimated)
@@ -137,7 +143,6 @@ def run(argv)
   $logger.info("pcc #{pcc}")
   $logger.info("spcc #{spcc}")
   $logger.info("mrd #{mrd}")
-  $logger.info("Hallo")
   $logger.debug("DEBUG")
   $logger.debug(options)
   $logger.debug(argv)
