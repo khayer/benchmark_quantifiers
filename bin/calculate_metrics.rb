@@ -29,7 +29,8 @@ end
 
 sum_all_counts = 0
 #File.open("files/ENS.PLD.counts_for_FPKM.txt").each do |line|
-File.open("files/ENS.PSD.counts_for_FPKM.txt").each do |line|
+#File.open("files/ENS.PSD.counts_for_FPKM.txt").each do |line|
+File.open("files/ENS.PD.counts_for_FPKM.txt").each do |line|
   line.chomp!
   next if line =~ /^gene/
   gene_id, cnt = line.split("\t")
@@ -43,7 +44,8 @@ fpkm_per_transcript = {}
 effective_length_per_transcript = {}
 fpkm_sum_over_all_transcripts = 0
 #File.open("files/ENS.PLD.counts_for_FPKM.txt").each do |line|
-File.open("files/ENS.PSD.counts_for_FPKM.txt").each do |line|
+#File.open("files/ENS.PSD.counts_for_FPKM.txt").each do |line|
+File.open("files/ENS.PD.counts_for_FPKM.txt").each do |line|
   line.chomp!
   next if line =~ /^gene/
   gene_id, cnt = line.split("\t")
@@ -86,7 +88,8 @@ end
 puts tpm_per_transcript
 
 #out_file = File.open("files/transcript_metrics_ENS.PLD.txt", "w")
-out_file = File.open("files/transcript_metrics_ENS.PSD.txt", "w")
+#out_file = File.open("files/transcript_metrics_ENS.PSD.txt", "w")
+out_file = File.open("files/transcript_metrics_ENS.PD.txt", "w")
 out_file.puts "GENEID\ttrans_id\tgene_id\tlength\t#exons\teffective_length\tFPKM\tTPM"
 File.open("files/transcript_length.txt").each do |line|
   line.chomp!
