@@ -45,6 +45,21 @@ $datasets = {
   :PES => "VC_ENSEMBL_POLYA_EFFECTS_SHORT",
 }
 
+def get_frag_len_metrics(d)
+  case
+  when d =~ /L$/
+    mean_FLD = 269.61
+    std_FLD = 39.84
+  when d =~ /S$/
+    mean_FLD = 260.0
+    std_FLD = 44.0
+  else
+    mean_FLD = 269.61
+    std_FLD = 39.84
+  end
+  [mean_FLD, std_FLD]
+end
+
 #Tree
 #.
 #├── VC_ENSEMBL_PERFECT
@@ -197,6 +212,10 @@ def run(argv)
     $logger.debug "Effected? #{effected}"
     options[:data_path] = "#{tree_base}/#{$datasets[d]}"
 
+    options[:fwd_reads] = "#{tree_base}/reads/VC.ENS.#{d}_fwd.fq"
+    options[:rev_reads] = "#{tree_base}/reads/VC.ENS.#{d}_rev.fq"
+
+    options[:frag_len_mean], options[:frag_len_stddev] = get_frag_len_metrics(d)
     case algorithm
 
     when :cufflinks
@@ -252,9 +271,34 @@ def run(argv)
 
      when :express
       $logger.debug("eXpress")
-      estimated = Express.new(estimated)
-      estimated.read_file()
-      fpkm = true
+
+      options[:out_path] = "#{options[:data_path]}/express"
+      begin
+        Dir.mkdir(options[:out_path])
+      rescue SystemCallError
+        if Dir.exist?(options[:out_path])
+          $logger.warn("Directory #{options[:out_path]} exists!")
+        else
+          $logger.error("Can't create directory #{options[:out_path]}!")
+          raise("Trouble creating directory, log for details.")
+        end
+      end
+      if Functions.check_if_results_exist("#{options[:out_path]}/results.xprs")
+        $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+        next
+      end
+      shell_file = "#{options[:out_path]}/run.sh"
+      o = File.open(shell_file,"w")
+      c = Express.new("dummy")
+      erubis = Erubis::Eruby.new(c.template)
+      o.puts(erubis.evaluate(options))
+      o.close()
+      Dir.chdir "#{options[:out_path]}"
+      $logger.debug(Dir.pwd)
+      cmd = "bsub < #{shell_file}"
+      jobnumber = submit(cmd,options)
+      options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+
     when :ireckon
       $logger.debug("IReckon")
       estimated = IReckon.new(estimated)

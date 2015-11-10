@@ -12,6 +12,7 @@ class Kallisto < FileFormats
   # GENE.2:chr1:134212702-134230065_+ 3107  2851.35 0 0
   # GENE.3:chr1:8351555-9288654_- 4165  3827.31 3254.32 39.4293
   # GENE.4:chr1:8351555-9289319_- 4884  4557.12 6829.75 69.497
+
   def read_file()
     CSV.foreach(@filename, {:headers => true, :col_sep => "\t"}) do |row|
       @tpm[row['target_id'].split(":")[0]] = row['tpm'].to_f

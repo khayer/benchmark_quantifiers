@@ -1,3 +1,9 @@
 # config.yml
 cufflinks: "/home/hayer/itmat/benchmark_quantifiers/tools/cufflinks-2.2.1.Linux_x86_64/cufflinks"
 annotation_gtf: "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF.gtf"
+transcripts_fa: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts.fa"
+# Bowtie
+bowtie: "/home/hayer/itmat/benchmark_quantifiers/tools/bowtie-1.1.2/bowtie"
+bowtie_index: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts_offrate_1"
+samtools: "/home/hayer/itmat/bp2/tools/samtools-0.1.19/samtools"
+express: "/home/hayer/itmat/benchmark_quantifiers/tools/express-1.5.1-linux_x86_64/express"
