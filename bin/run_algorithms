@@ -48,14 +48,14 @@ $datasets = {
 def get_frag_len_metrics(d)
   case
   when d =~ /L$/
-    mean_FLD = 269.61
-    std_FLD = 39.84
+    mean_FLD = 269
+    std_FLD = 39
   when d =~ /S$/
-    mean_FLD = 260.0
-    std_FLD = 44.0
+    mean_FLD = 260
+    std_FLD = 44
   else
-    mean_FLD = 269.61
-    std_FLD = 39.84
+    mean_FLD = 269
+    std_FLD = 40
   end
   [mean_FLD, std_FLD]
 end
