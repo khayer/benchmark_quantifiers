@@ -206,7 +206,6 @@ def run(argv)
   $logger.debug "First phase done!"
 
   for d in dataset
-    Dir.chdir current_dir
     $logger.debug "Current dataset #{d}"
     $datasets[d] =~ /_EFFECTS/  ? effected = true : effected = false
     $logger.debug "Effected? #{effected}"
@@ -268,37 +267,61 @@ def run(argv)
       cmd = "bsub < #{shell_file}"
       jobnumber = submit(cmd,options)
       options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+      Dir.chdir current_dir
 
      when :express
       $logger.debug("eXpress")
-
-      options[:out_path] = "#{options[:data_path]}/express"
-      begin
-        Dir.mkdir(options[:out_path])
-      rescue SystemCallError
-        if Dir.exist?(options[:out_path])
-          $logger.warn("Directory #{options[:out_path]} exists!")
+      for mode in %w{default no_bias no_error}
+        if mode == "default"
+          options[:out_path] = "#{options[:data_path]}/express"
         else
-          $logger.error("Can't create directory #{options[:out_path]}!")
-          raise("Trouble creating directory, log for details.")
+          options[:out_path] = "#{options[:data_path]}/express/#{mode}"
         end
+        begin
+          Dir.mkdir(options[:out_path])
+        rescue SystemCallError
+          if Dir.exist?(options[:out_path])
+            $logger.warn("Directory #{options[:out_path]} exists!")
+          else
+            $logger.error("Can't create directory #{options[:out_path]}!")
+            raise("Trouble creating directory, log for details.")
+          end
+        end
+        if Functions.check_if_results_exist("#{options[:out_path]}/results.xprs")
+          $logger.warn "Results for #{d} and #{algorithm} (mode #{mode}) already exist. SKIPPING!"
+          next
+        end
+        if mode != "default"
+          # Check if bam file exists
+          k = `ls -lrth #{options[:data_path]}/express/express.*.out | tail -1`
+          if k == ""
+            $logger.warn "Bam file does not exist or is not complete. SKIPPING"
+            next
+          end
+          n = k.split(" ")[-1]
+          status = nil
+          File.open(n).each do |line|
+            next unless line =~ /^Subject:/
+            r = line.split(" ")[-1]
+            $logger.debug "R = #{r}"
+            status = true if r == "Done"
+          end
+          $logger.warn "Bam file does not exist or is not complete. SKIPPING" unless status
+          next unless status
+        end
+        shell_file = "#{options[:out_path]}/run.sh"
+        o = File.open(shell_file,"w")
+        c = Express.new("dummy")
+        erubis = Erubis::Eruby.new(c.template(mode))
+        o.puts(erubis.evaluate(options))
+        o.close()
+        Dir.chdir "#{options[:out_path]}"
+        $logger.debug(Dir.pwd)
+        cmd = "bsub < #{shell_file}"
+        jobnumber = submit(cmd,options)
+        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+        Dir.chdir current_dir
       end
-      if Functions.check_if_results_exist("#{options[:out_path]}/results.xprs")
-        $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-        next
-      end
-      shell_file = "#{options[:out_path]}/run.sh"
-      o = File.open(shell_file,"w")
-      c = Express.new("dummy")
-      erubis = Erubis::Eruby.new(c.template)
-      o.puts(erubis.evaluate(options))
-      o.close()
-      Dir.chdir "#{options[:out_path]}"
-      $logger.debug(Dir.pwd)
-      cmd = "bsub < #{shell_file}"
-      jobnumber = submit(cmd,options)
-      options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-
     when :ireckon
       $logger.debug("IReckon")
       estimated = IReckon.new(estimated)

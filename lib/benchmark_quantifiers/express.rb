@@ -22,15 +22,23 @@ class Express < FileFormats
     end
   end
 
-  def template()
+  def template(mode="default")
     t = "#!/bin/bash -e\n"
     t += "#BSUB -J express\n"
     t += "#BSUB -o express.%J.out\n"
     t += "#BSUB -e express.%J.error\n"
-    t += "#BSUB -n 20\n"
-    t += "#BSUB -M 30000\n"
-    t += "<%= @bowtie %> --threads 20 -k 50 -S -X 800 --offrate 1 <%= @bowtie_index %> -1 <%= @fwd_reads %> -2 <%= @rev_reads %> | <%= @samtools %> view -Sb - > <%= @data_path %>/express/hits.bam\n"
-    t += "<%= @express %>  -m <%= @frag_len_mean %> -s <%= @frag_len_stddev %> --fr-stranded  <%= @transcripts_fa %> hits.bam\n"
+    case mode
+    when "default"
+      t += "#BSUB -n 20\n"
+      t += "#BSUB -M 30000\n"
+      t += "<%= @bowtie %> --threads 20 -k 50 -S -X 800 --offrate 1 <%= @bowtie_index %> -1 <%= @fwd_reads %> -2 <%= @rev_reads %> | <%= @samtools %> view -Sb - > <%= @data_path %>/express/hits.bam\n"
+      t += "<%= @express %>  -m <%= @frag_len_mean %> -s <%= @frag_len_stddev %> --fr-stranded  <%= @transcripts_fa %> hits.bam\n"
+    when "no_bias"
+      t += "<%= @express %> --no-bias-correct -m <%= @frag_len_mean %> -s <%= @frag_len_stddev %> --fr-stranded  <%= @transcripts_fa %> ../hits.bam\n"
+    when "no_error"
+      t += "<%= @express %> --no-error-model -m <%= @frag_len_mean %> -s <%= @frag_len_stddev %> --fr-stranded  <%= @transcripts_fa %> ../hits.bam\n"
+    end
+    t
   end
 
 end

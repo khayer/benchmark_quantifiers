@@ -1,0 +1,9 @@
+Sender: LSF System <lsfadmin@node033.hpc.local>
+Subject: Job 70504: <express> in cluster <pennhpc> Exited
+
+Job <express> was submitted from host <node136.hpc.local> by user <hayer> in cluster <pennhpc>.
+Job was executed on host(s) <20*node033.hpc.local>, in queue <normal>, as user <hayer> in cluster <pennhpc>.
+</home/hayer> was used as the home directory.
+</home/hayer/itmat/benchmark_quantifiers/VC_ENSEMBL_PERFECT_SHORT/express> was used as the working directory.
+Started at Tue Nov 10 16:24:19 2015
+Results reported on Tue Nov 10 17:25:55 2015

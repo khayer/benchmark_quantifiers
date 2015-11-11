@@ -1,0 +1,9 @@
+Sender: LSF System <lsfadmin@node012.hpc.local>
+Subject: Job 72723: <express> in cluster <pennhpc> Done
+
+Job <express> was submitted from host <node061.hpc.local> by user <hayer> in cluster <pennhpc>.
+Job was executed on host(s) <20*node012.hpc.local>, in queue <normal>, as user <hayer> in cluster <pennhpc>.
+</home/hayer> was used as the home directory.
+</home/hayer/itmat/benchmark_quantifiers/VC_ENSEMBL_PERFECT_SHORT/express> was used as the working directory.
+Started at Wed Nov 11 07:17:45 2015
+Results reported on Wed Nov 11 07:43:16 2015
