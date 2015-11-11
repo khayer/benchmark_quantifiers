@@ -60,6 +60,19 @@ def get_frag_len_metrics(d)
   [mean_FLD, std_FLD]
 end
 
+
+def get_comp(d)
+  case
+  when d =~ /L$/
+    comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PLD.txt"
+  when d =~ /S$/
+    comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PSD.txt"
+  else
+    comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt"
+  end
+  comp
+end
+
 #Tree
 #.
 #├── VC_ENSEMBL_PERFECT
@@ -289,6 +302,15 @@ def run(argv)
         end
         if Functions.check_if_results_exist("#{options[:out_path]}/results.xprs")
           $logger.warn "Results for #{d} and #{algorithm} (mode #{mode}) already exist. SKIPPING!"
+          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            comp = get_comp(d)
+            cmd = "bsub ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} results.xprs express -v -p \> compare.txt 2\> compare_stats.txt"
+            $logger.debug cmd
+            jobnumber = submit(cmd,options)
+            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+            Dir.chdir current_dir
+          end
           next
         end
         if mode != "default"
