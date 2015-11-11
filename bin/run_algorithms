@@ -305,7 +305,7 @@ def run(argv)
           unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
             Dir.chdir "#{options[:out_path]}"
             comp = get_comp(d)
-            cmd = "bsub ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} results.xprs express -v -p \> compare.txt 2\> compare_stats.txt"
+            cmd = "bsub ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} results.xprs express -v -p \\> compare.txt 2\\> compare_stats.txt"
             $logger.debug cmd
             jobnumber = submit(cmd,options)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
