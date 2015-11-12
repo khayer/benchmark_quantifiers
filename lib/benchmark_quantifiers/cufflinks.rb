@@ -27,11 +27,11 @@ class Cufflinks < FileFormats
     t += "#BSUB -M 30000\n"
     case mode
     when "default"
-      t += "<%= @cufflinks %> -o <%= @data_path %>/cufflinks -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+      t += "<%= @cufflinks %> -o <%= @out_path %> -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
     when "abinitio"
-      t += "<%= @cufflinks %> -o <%= @data_path %>/cufflinks -g <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+      t += "<%= @cufflinks %> -o <%= @out_path %> -g <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
     when "bias"
-      t += "<%= @cufflinks %> -b <%= @genome_fa %> -o <%= @data_path %>/cufflinks -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+      t += "<%= @cufflinks %> -b <%= @genome_fa %> -o <%= @out_path %> -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
     end
   end
 
