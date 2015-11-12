@@ -18,14 +18,21 @@ class Cufflinks < FileFormats
     end
   end
 
-  def template()
+  def template(mode = "default")
     t = "#!/bin/bash -e\n"
     t += "#BSUB -J cufflinks\n"
     t += "#BSUB -o cufflinks.%J.out\n"
     t += "#BSUB -e cufflinks.%J.error\n"
     t += "#BSUB -n 15\n"
     t += "#BSUB -M 30000\n"
-    t += "<%= @cufflinks %> -o <%= @data_path %>/cufflinks -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+    case mode
+    when "default"
+      t += "<%= @cufflinks %> -o <%= @data_path %>/cufflinks -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+    when "abinitio"
+      t += "<%= @cufflinks %> -o <%= @data_path %>/cufflinks -g <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+    when "bias"
+      t += "<%= @cufflinks %> -b <%= @genome_fa %> -o <%= @data_path %>/cufflinks -G <%= @annotation_gtf %> --library-type fr-secondstrand -p 15 <%= @align_bam %>\n"
+    end
   end
 
 end

@@ -2,6 +2,7 @@
 cufflinks: "/home/hayer/itmat/benchmark_quantifiers/tools/cufflinks-2.2.1.Linux_x86_64/cufflinks"
 annotation_gtf: "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF.gtf"
 transcripts_fa: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts.fa"
+genome_fa: "/home/hayer/itmat/benchmark_quantifiers/index/mm9_ucsc_all_numbered_chr.fa"
 # Bowtie
 bowtie: "/home/hayer/itmat/benchmark_quantifiers/tools/bowtie-1.1.2/bowtie"
 bowtie_index: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts_offrate_1"
