@@ -361,9 +361,70 @@ def run(argv)
       end
     when :ireckon
       $logger.debug("IReckon")
-      estimated = IReckon.new(estimated)
-      estimated.read_file()
-      fpkm = true
+      for mode in %w{default abinitio bias_1 bias_2}
+        if mode == "default"
+          options[:out_path] = "#{options[:data_path]}/ireckon"
+        else
+          options[:out_path] = "#{options[:data_path]}/ireckon/#{mode}"
+        end
+        Dir.glob("#{options[:data_path]}/*").each do |p|
+          $logger.debug "p #{p}"
+          if effected
+            next unless File.directory? p
+            if p =~ /tophat_out$/
+              next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
+              options[:align_bam] = "#{p}/accepted_hits.bam"
+              break
+            end
+          else
+            next if File.directory? p
+            if p =~ /VC.ENS.#{d}.s.bam$/
+              next unless Functions.check_if_results_exist(p)
+              options[:align_bam] = p
+              break
+            end
+          end
+        end
+        unless options[:align_bam]
+          $logger.error "Couldn't find bam_file in #{options[:data_path]}"
+          next
+        end
+        begin
+          Dir.mkdir(options[:out_path])
+        rescue SystemCallError
+          if Dir.exist?(options[:out_path])
+            $logger.warn("Directory #{options[:out_path]} exists!")
+          else
+            $logger.error("Can't create directory #{options[:out_path]}!")
+            raise("Trouble creating directory, log for details.")
+          end
+        end
+        if Functions.check_if_results_exist("#{options[:out_path]}/result.gtf")
+          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            comp = get_comp(d)
+            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} result.gtf ireckon -v -p \\> compare.txt 2\\> compare_stats.txt"
+            $logger.debug cmd
+            jobnumber = submit(cmd,options)
+            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+            Dir.chdir current_dir
+          end
+          next
+        end
+        shell_file = "#{options[:out_path]}/run.sh"
+        o = File.open(shell_file,"w")
+        c = IReckon.new("dummy")
+        erubis = Erubis::Eruby.new(c.template(mode))
+        o.puts(erubis.evaluate(options))
+        o.close()
+        Dir.chdir "#{options[:out_path]}"
+        $logger.debug(Dir.pwd)
+        cmd = "bsub < #{shell_file}"
+        jobnumber = submit(cmd,options)
+        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+        Dir.chdir current_dir
+      end
     when :isoem
       $logger.debug("IsoEM")
       estimated = IsoEM.new(estimated)
