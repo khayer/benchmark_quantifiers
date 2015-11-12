@@ -19,4 +19,18 @@ class Kallisto < FileFormats
     end
   end
 
+  def template(mode = "default")
+    t = "#!/bin/bash -e\n"
+    t += "#BSUB -J kallisto\n"
+    t += "#BSUB -o kallisto.%J.out\n"
+    t += "#BSUB -e kallisto.%J.error\n"
+    t += "#BSUB -n 10\n"
+    case mode
+    when "default"
+      t += "<%= @kallisto %> quant -i <%= @kallisto_index %> -o <%= @out_path %> -t 10 <%= @fwd_reads %> <%= @rev_reads %>\n"
+    when "bias"
+      t += "<%= @kallisto %> quant -i <%= @kallisto_index %> -o <%= @out_path %> -t 10 --bias <%= @fwd_reads %> <%= @rev_reads %>\n"
+    end
+  end
+
 end
