@@ -22,6 +22,7 @@ class StringTie < FileFormats
       row = row.split("\t")
       next unless row[2] == "transcript"
       if row[-1] =~ /reference_id \"(\w*\d*)\";/
+        row[-1] =~ /reference_id \"(\w*\d*)\";/
         trans_id = $1
       else
         row[-1] =~ /transcript_id \"(\w*\d*)\";/
