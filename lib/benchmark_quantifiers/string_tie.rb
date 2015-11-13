@@ -27,10 +27,10 @@ class StringTie < FileFormats
         row[-1] =~ /transcript_id \"(\w*\d*)\";/
         trans_id = $1
       end
-      row[-1] =~ /FPKM \"(\d*\.\d*)\";/
+      row[-1] =~ /FPKM \"(\d*\.\d*)\"/
       fpkm_v = $1
       @fpkm[trans_id] = fpkm_v.to_f
-      row[-1] =~ /TPM \"(\d*\.\d*)\";/
+      row[-1] =~ /TPM \"(\d*\.\d*)\"/
       tpm_v = $1
       @tpm[trans_id] = tpm_v.to_f
     end
