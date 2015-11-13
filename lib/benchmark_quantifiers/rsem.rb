@@ -34,7 +34,7 @@ class RSEM < FileFormats
     t += "#BSUB -n 10\n"
     case mode
     when "default"
-      t += "<%= @rsem %> -p 15 --strand-specific --paired-end <%= @fwd_reads %> <%= @rev_reads %> <%= @rsem_index %> -o rsem\n"
+      t += "<%= @rsem %> -p 15 --strand-specific --paired-end <%= @fwd_reads %> <%= @rev_reads %> <%= @rsem_index %> rsem\n"
     end
   end
 
