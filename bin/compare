@@ -131,7 +131,7 @@ def run(argv)
     estimated = Pennseq.new(estimated)
     estimated.read_file()
     fpkm = true
-  when :pennseq
+  when :stringtie
     $logger.debug("StringTie")
     estimated = StringTie.new(estimated)
     estimated.read_file()
