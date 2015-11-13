@@ -12,3 +12,5 @@ kallisto: "/home/hayer/itmat/benchmark_quantifiers/tools/kallisto_linux-v0.42.3/
 kallisto_index: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts_kallisto"
 ireckon: "/home/hayer/itmat/benchmark_quantifiers/tools/IReckon-1.0.8.jar"
 ireckon_ucsc: "/project/itmatlab/for_katharina/greg_new/annotation/mm9_ensebl_ucsc_format_filtered.txt"
+rsem: "/home/hayer/itmat/benchmark_quantifiers/tools/RSEM-1.2.23/rsem-calculate-expression"
+rsem_index: "/home/hayer/itmat/benchmark_quantifiers/index/RSEM_mm9_ucsc_all_numbered_chr_transcripts_INDEX"

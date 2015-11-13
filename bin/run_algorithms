@@ -476,9 +476,48 @@ def run(argv)
       end
     when :rsem
       $logger.debug("RSEM")
-      estimated = RSEM.new(estimated)
-      estimated.read_file()
-      fpkm = true
+      for mode in %w{default }
+        if mode == "default"
+          options[:out_path] = "#{options[:data_path]}/rsem"
+        else
+          options[:out_path] = "#{options[:data_path]}/rsem/#{mode}"
+        end
+        begin
+          Dir.mkdir(options[:out_path])
+        rescue SystemCallError
+          if Dir.exist?(options[:out_path])
+            $logger.warn("Directory #{options[:out_path]} exists!")
+          else
+            $logger.error("Can't create directory #{options[:out_path]}!")
+            raise("Trouble creating directory, log for details.")
+          end
+        end
+        if Functions.check_if_results_exist("#{options[:out_path]}/rsem*.isoforms.results")
+          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            comp = get_comp(d)
+            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} rsem*.isoforms.results rsem -v -p \\> compare.txt 2\\> compare_stats.txt"
+            $logger.debug cmd
+            jobnumber = submit(cmd,options)
+            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+            Dir.chdir current_dir
+          end
+          next
+        end
+        shell_file = "#{options[:out_path]}/run.sh"
+        o = File.open(shell_file,"w")
+        c = RSEM.new("dummy")
+        erubis = Erubis::Eruby.new(c.template(mode))
+        o.puts(erubis.evaluate(options))
+        o.close()
+        Dir.chdir "#{options[:out_path]}"
+        $logger.debug(Dir.pwd)
+        cmd = "bsub < #{shell_file}"
+        jobnumber = submit(cmd,options)
+        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+        Dir.chdir current_dir
+      end
     when :pennseq
       $logger.debug("pennseq")
       estimated = Pennseq.new(estimated)

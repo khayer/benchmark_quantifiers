@@ -12,7 +12,7 @@ class FileFormats
     raise "Not defined yet!"
   end
 
-  def template()
+  def template(mode="default")
     raise "Not defined yet!"
   end
 
