@@ -22,7 +22,8 @@ $algorithms = [
   :isoem,
   :kallisto,
   :pennseq,
-  :rsem
+  :rsem,
+  :stringtie
 ]
 
 # Initialize logger
@@ -130,6 +131,11 @@ def run(argv)
     estimated = Pennseq.new(estimated)
     estimated.read_file()
     fpkm = true
+  when :pennseq
+    $logger.debug("StringTie")
+    estimated = StringTie.new(estimated)
+    estimated.read_file()
+    tpm = true
   end
 
   if fpkm
