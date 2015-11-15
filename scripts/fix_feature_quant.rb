@@ -33,7 +33,7 @@ end
 #  exon 3  chr1:134222783-134222806  15
 
 current_gene = ""
-File.open(counts).each do |line|
+File.open(feature_quant).each do |line|
   line.chomp!
   if line =~ /^GENE/
     current_gene = line.split(" ")[0]
