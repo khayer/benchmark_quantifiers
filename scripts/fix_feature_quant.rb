@@ -40,8 +40,8 @@ File.open(feature_quant).each do |line|
   end
   if line =~ /^transcript/
     fields = line.split("\t")
-    fields[-1] =  counts_by_trans[current_gene]
-    fields[-1] = 0 if fields[-1] == ""
+    fields[-1] = counts_by_trans[current_gene]
+    fields[-1] = 0 unless fields[-1] =~ /\d/
     puts fields.join("\t")
   else
     puts line
