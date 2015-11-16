@@ -47,7 +47,19 @@ ARGV[0..-1].each do |arg|
   info[algo][mode][dataset] = {:rmse => rmse, :mrd => mrd, :spcc => spcc}
 end
 
-puts info
+STDERR.puts info
+firts = true
+info.each_pair do |algo, modes|
+  modes.each_pair do |mode, datasets|
+    puts "Algorithm\tMeasuerment\tMode\tDataset\tValue" if first
+    first = false
+    datasets.each_pair do |dataset, stats|
+      stats.each_pair do |measurement, value|
+        puts "#{algo}\t#{measurement}\t#{mode}\t#{dataset}\t#{value}"
+      end
+    end
+  end
+end
 #names.flatten!
 ##info.flatten!
 #
