@@ -44,7 +44,7 @@ ARGV[0..-1].each do |arg|
   end
   info[algo] ||= {}
   info[algo][mode] ||= {}
-  info[algo][mode][dataset] = {:rsme => rsme, :mrd => mrd, :spcc => spcc}
+  info[algo][mode][dataset] = {:rmse => rmse, :mrd => mrd, :spcc => spcc}
 end
 
 puts info
