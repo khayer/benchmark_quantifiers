@@ -35,16 +35,18 @@ class IReckon < FileFormats
     t += "#BSUB -e ireckon.%J.error\n"
     t += "#BSUB -n 10\n"
     t += "#BSUB -M 16000\n"
+    t += "ln -s <%= @ireckon_ucsc %> tmp_ireckon_ucsc\n"
+    t += "ln -s <%= @genome_fa %> tmp_genome_fa\n"
     t += "java -Xmx15000M -jar "
     case mode
     when "default"
-      t += "<%= @ireckon %> <%= @align_bam %> <%= @genome_fa %> <%= @ireckon_ucsc %> -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 0 -novel 0\n"
+      t += "<%= @ireckon %> <%= @align_bam %> tmp_genome_fa tmp_ireckon_ucsc -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 0 -novel 0\n"
     when "abinitio"
-      t += "<%= @ireckon %> <%= @align_bam %> <%= @genome_fa %> <%= @ireckon_ucsc %> -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 0 -novel 1\n"
+      t += "<%= @ireckon %> <%= @align_bam %> tmp_genome_fa tmp_ireckon_ucsc -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 0 -novel 1\n"
     when "bias_1"
-      t += "<%= @ireckon %> <%= @align_bam %> <%= @genome_fa %> <%= @ireckon_ucsc %> -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 1 -novel 0\n"
+      t += "<%= @ireckon %> <%= @align_bam %> tmp_genome_fa tmp_ireckon_ucsc -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 1 -novel 0\n"
     when "bias_2"
-      t += "<%= @ireckon %> <%= @align_bam %> <%= @genome_fa %> <%= @ireckon_ucsc %> -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 2 -novel 0\n"
+      t += "<%= @ireckon %> <%= @align_bam %> tmp_genome_fa tmp_ireckon_ucsc -1 <%= @fwd_reads %> -2 <%= @rev_reads %> -o . -n 10 -b 2 -novel 0\n"
     end
   end
 
