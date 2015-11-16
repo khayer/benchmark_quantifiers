@@ -35,9 +35,9 @@ class IReckon < FileFormats
     t += "#BSUB -e ireckon.%J.error\n"
     t += "#BSUB -n 10\n"
     t += "#BSUB -M 16000\n"
-    t += "ln -s <%= @ireckon_ucsc %> tmp_ireckon_ucsc\n"
-    t += "ln -s <%= @genome_fa %> tmp_genome_fa\n"
-    t += "ln -s <%= @genome_fa %>.fai tmp_genome_fa.fai\n"
+    t += "[[ -f tmp_ireckon_ucsc ]]  || ln -s <%= @ireckon_ucsc %> tmp_ireckon_ucsc\n"
+    t += "[[ -f tmp_genome_fa ]]  || ln -s <%= @genome_fa %> tmp_genome_fa\n"
+    t += "[[ -f tmp_genome_fa.fai ]]  || ln -s <%= @genome_fa %>.fai tmp_genome_fa.fai\n"
     t += "java -Xmx15000M -jar "
     case mode
     when "default"
