@@ -90,13 +90,13 @@ puts tpm_per_transcript
 #out_file = File.open("files/transcript_metrics_ENS.PLD.txt", "w")
 #out_file = File.open("files/transcript_metrics_ENS.PSD.txt", "w")
 out_file = File.open("files/transcript_metrics_ENS.PD.txt", "w")
-out_file.puts "GENEID\ttrans_id\tgene_id\tlength\t#exons\teffective_length\tFPKM\tTPM"
+out_file.puts "GENEID\ttrans_id\tgene_id\tlength\t#exons\teffective_length\tFPKM\tTPM\t#isoforms"
 File.open("files/transcript_length.txt").each do |line|
   line.chomp!
   next if line =~ /^GENEID/
   gene_id, enstrans, ensg_id, length, num_exon = line.split("\t")
   if effective_length_per_transcript[enstrans]
-    out_file.puts "#{line}\t#{effective_length_per_transcript[enstrans]}\t#{fpkm_per_transcript[enstrans]}\t#{tpm_per_transcript[enstrans]}"
+    out_file.puts "#{line}\t#{effective_length_per_transcript[enstrans]}\t#{fpkm_per_transcript[enstrans]}\t#{tpm_per_transcript[enstrans]}\t#{ensg_to_enstrans[ensg_id].length}"
   else
     effective_length = RNAseqFunctions.effective_length(length.to_i, mean_FLD)
     if effective_length < 0
@@ -105,7 +105,7 @@ File.open("files/transcript_length.txt").each do |line|
     if effective_length < 0
       effective_length = 1
     end
-    out_file.puts "#{line}\t#{effective_length}\t0\t0"
+    out_file.puts "#{line}\t#{effective_length}\t0\t0\t#{ensg_to_enstrans[ensg_id].length}"
   end
 end
 
