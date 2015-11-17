@@ -74,6 +74,17 @@ def get_comp(d)
   comp
 end
 
+def get_comp2(d)
+  case
+  when d =~ /L$/
+   comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PLD"
+  when d =~ /S$/
+   comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PSD"
+  else
+   comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PD"
+  end
+end
+
 #Tree
 #.
 #├── VC_ENSEMBL_PERFECT
@@ -282,6 +293,14 @@ def run(argv)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
             Dir.chdir current_dir
           end
+          if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+            comp = get_comp2(d)
+            cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt -t transcripts.gtf #{comp} \> stats_auto.txt"
+            $logger.debug cmd
+            jobnumber = submit(cmd,options)
+            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+            Dir.chdir current_dir
+          end
           next
         end
         shell_file = "#{options[:out_path]}/run.sh"
@@ -406,6 +425,14 @@ def run(argv)
             Dir.chdir "#{options[:out_path]}"
             comp = get_comp(d)
             cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} result.gtf ireckon -v -p \\> compare.txt 2\\> compare_stats.txt"
+            $logger.debug cmd
+            jobnumber = submit(cmd,options)
+            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+            Dir.chdir current_dir
+          end
+          if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+            comp = get_comp2(d)
+            cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt -t result.gtf #{comp} \> stats_auto.txt"
             $logger.debug cmd
             jobnumber = submit(cmd,options)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
@@ -570,6 +597,14 @@ def run(argv)
             Dir.chdir "#{options[:out_path]}"
             comp = get_comp(d)
             cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} transcripts.gtf stringtie -v -p \\> compare.txt 2\\> compare_stats.txt"
+            $logger.debug cmd
+            jobnumber = submit(cmd,options)
+            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+            Dir.chdir current_dir
+          end
+          if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+            comp = get_comp2(d)
+            cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt -t transcripts.gtf #{comp} \> stats_auto.txt"
             $logger.debug cmd
             jobnumber = submit(cmd,options)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
