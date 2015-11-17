@@ -293,7 +293,7 @@ def run(argv)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
             Dir.chdir current_dir
           end
-          if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             comp = get_comp2(d)
             cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt -t transcripts.gtf #{comp} \> stats_auto.txt"
             $logger.debug cmd
@@ -430,7 +430,7 @@ def run(argv)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
             Dir.chdir current_dir
           end
-          if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             comp = get_comp2(d)
             cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt -t result.gtf #{comp} \> stats_auto.txt"
             $logger.debug cmd
@@ -602,7 +602,7 @@ def run(argv)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
             Dir.chdir current_dir
           end
-          if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             comp = get_comp2(d)
             cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt -t transcripts.gtf #{comp} \> stats_auto.txt"
             $logger.debug cmd
