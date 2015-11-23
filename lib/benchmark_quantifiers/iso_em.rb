@@ -26,6 +26,7 @@ class IsoEM < FileFormats
     t += "#BSUB -o IsoEM.%J.out\n"
     t += "#BSUB -e IsoEM.%J.error\n"
     t += "#BSUB -M 40000\n"
+    t += "module load java-sdk-1.7.0\n"
     case mode
       # -c  -m 260 -d 40 -s ../VC.ENS.PL.sam
     when "default"
