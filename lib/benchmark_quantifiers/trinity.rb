@@ -39,7 +39,7 @@ class Trinity < FileFormats
     t += "#BSUB -o trinity.%J.out\n"
     t += "#BSUB -e trinity.%J.error\n"
     t += "#BSUB -n 10\n"
-    t += "#BSUB -M 16000\n"
+    t += "#BSUB -M 36000\n"
     t += "module load java-sdk-1.7.0\n"
     t += "<%= @trinity %> "
     t += "--grid_conf <%= @trinity_grid %> "
@@ -52,6 +52,7 @@ class Trinity < FileFormats
     # HARDCODED INDEXES!!!
     t += "<%= @gmap %> -d mm9_ucsc_gmap -D ~/index Trinity-GG.fasta -f 2 > gmap_result.gff\n"
     t += "<%= @gmap %> -D /home/hayer/itmat/benchmark_quantifiers/index/ -d gmap_transcripts Trinity-GG.fasta -f 2 > gmap_result_transcripts.gff\n"
+
     t += "<%= @trinity_quant %> "
     t += "--transcripts Trinity-GG.fasta "
     t += "--seqType fq "
