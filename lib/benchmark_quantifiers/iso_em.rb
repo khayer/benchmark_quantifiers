@@ -30,9 +30,9 @@ class IsoEM < FileFormats
     case mode
       # -c  -m 260 -d 40 -s ../VC.ENS.PL.sam
     when "default"
-      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -n <%= @frag_len_stddev %> -s <%= @align_bam %>\n"
+      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -s <%= @align_bam %>\n"
     when "bias"
-      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -n <%= @frag_len_stddev %> -b yes -s <%= @align_bam %>\n"
+      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -b yes -s <%= @align_bam %>\n"
     end
   end
 
