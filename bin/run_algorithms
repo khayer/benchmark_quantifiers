@@ -569,8 +569,10 @@ def run(argv)
           raise("Trouble creating directory, log for details.")
         end
       end
+      done = false
       for mode in %w{default bias}
         if Functions.check_if_results_exist("#{options[:out_path]}/sailfish.out/quant_bias_corrected.sf")
+          done = true
           $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
           if mode == "default"
             unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
@@ -603,21 +605,22 @@ def run(argv)
               Dir.chdir current_dir
             end
           end
-          next
         end
       end
-      shell_file = "#{options[:out_path]}/run.sh"
-      o = File.open(shell_file,"w")
-      c = Sailfish.new("dummy")
-      erubis = Erubis::Eruby.new(c.template(mode))
-      o.puts(erubis.evaluate(options))
-      o.close()
-      Dir.chdir "#{options[:out_path]}"
-      $logger.debug(Dir.pwd)
-      cmd = "bsub < #{shell_file}"
-      jobnumber = submit(cmd,options)
-      options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-      Dir.chdir current_dir
+      unless done
+        shell_file = "#{options[:out_path]}/run.sh"
+        o = File.open(shell_file,"w")
+        c = Sailfish.new("dummy")
+        erubis = Erubis::Eruby.new(c.template(mode))
+        o.puts(erubis.evaluate(options))
+        o.close()
+        Dir.chdir "#{options[:out_path]}"
+        $logger.debug(Dir.pwd)
+        cmd = "bsub < #{shell_file}"
+        jobnumber = submit(cmd,options)
+        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+        Dir.chdir current_dir
+      end
     when :stringtie
       $logger.debug("StringTie")
       for mode in %w{default abinitio}
