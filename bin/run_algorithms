@@ -763,7 +763,7 @@ def run(argv)
         end
         shell_file = "#{options[:out_path]}/run.sh"
         o = File.open(shell_file,"w")
-        c = Cufflinks.new("dummy")
+        c = Trinity.new("dummy")
         erubis = Erubis::Eruby.new(c.template(mode))
         o.puts(erubis.evaluate(options))
         o.close()
