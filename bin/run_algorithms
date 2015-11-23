@@ -470,13 +470,13 @@ def run(argv)
           if effected
             next unless File.directory? p
             if p =~ /tophat_out$/
-              next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
-              options[:align_bam] = "#{p}/accepted_hits.bam"
+              next unless Functions.check_if_results_exist("#{p}/accepted_hits.NO.sam")
+              options[:align_bam] = "#{p}/accepted_hits.NO.sam"
               break
             end
           else
             next if File.directory? p
-            if p =~ /VC.ENS.#{d}.s.bam$/
+            if p =~ /VC.ENS.#{d}.sam$/
               next unless Functions.check_if_results_exist(p)
               options[:align_bam] = p
               break
