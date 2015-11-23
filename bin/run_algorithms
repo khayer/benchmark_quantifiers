@@ -25,6 +25,7 @@ $algorithms = [
   :kallisto,
   :pennseq,
   :rsem,
+  :sailfish,
   :stringtie
 ]
 
@@ -551,6 +552,69 @@ def run(argv)
       estimated = Pennseq.new(estimated)
       estimated.read_file()
       fpkm = true
+    when :sailfish
+      $logger.debug("Sailfish")
+      #for mode in %w{default bias}
+      options[:out_path] = "#{options[:data_path]}/sailfish"
+      begin
+        Dir.mkdir(options[:out_path])
+      rescue SystemCallError
+        if Dir.exist?(options[:out_path])
+          $logger.warn("Directory #{options[:out_path]} exists!")
+        else
+          $logger.error("Can't create directory #{options[:out_path]}!")
+          raise("Trouble creating directory, log for details.")
+        end
+      end
+      for mode in %w{default bias}
+        if Functions.check_if_results_exist("#{options[:out_path]}/sailfish.out/quant_bias_corrected.sf")
+          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+          if mode == default
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} sailfish.out/quant.sf sailfish -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+          else
+            begin
+              Dir.mkdir("#{options[:out_path]}/bias")
+            rescue SystemCallError
+              if Dir.exist?("#{options[:out_path]}/bias")
+                $logger.warn("Directory #{options[:out_path]}/bias exists!")
+              else
+                $logger.error("Can't create directory #{options[:out_path]}/bias!")
+                raise("Trouble creating directory, log for details.")
+              end
+            end
+            unless Functions.check_if_results_exist("#{options[:out_path]}/bias/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}/bias"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} ../sailfish.out/quant_bias_corrected.sf sailfish -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+          end
+          next
+        end
+      end
+      shell_file = "#{options[:out_path]}/run.sh"
+      o = File.open(shell_file,"w")
+      c = Sailfish.new("dummy")
+      erubis = Erubis::Eruby.new(c.template(mode))
+      o.puts(erubis.evaluate(options))
+      o.close()
+      Dir.chdir "#{options[:out_path]}"
+      $logger.debug(Dir.pwd)
+      cmd = "bsub < #{shell_file}"
+      jobnumber = submit(cmd,options)
+      options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+      Dir.chdir current_dir
     when :stringtie
       $logger.debug("StringTie")
       for mode in %w{default abinitio}

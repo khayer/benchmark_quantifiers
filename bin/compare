@@ -23,6 +23,7 @@ $algorithms = [
   :kallisto,
   :pennseq,
   :rsem,
+  :sailfish,
   :stringtie
 ]
 
@@ -134,6 +135,11 @@ def run(argv)
   when :stringtie
     $logger.debug("StringTie")
     estimated = StringTie.new(estimated)
+    estimated.read_file()
+    tpm = true
+  when :sailfish
+    $logger.debug("Sailfish")
+    estimated = Sailfish.new(estimated)
     estimated.read_file()
     tpm = true
   end

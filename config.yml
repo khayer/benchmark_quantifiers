@@ -15,3 +15,5 @@ ireckon_ucsc: "/project/itmatlab/for_katharina/greg_new/annotation/mm9_ensebl_uc
 rsem: "/home/hayer/itmat/benchmark_quantifiers/tools/RSEM-1.2.23/rsem-calculate-expression"
 rsem_index: "/home/hayer/itmat/benchmark_quantifiers/index/RSEM_mm9_ucsc_all_numbered_chr_transcripts_INDEX"
 stringtie: "/home/hayer/itmat/benchmark_quantifiers/tools/stringtie-1.1.2.Linux_x86_64/stringtie"
+sailfish: "/home/hayer/itmat/benchmark_quantifiers/tools/SailfishBeta-0.8.0_DebianSqueeze/bin/sailfish"
+sailfish_index: "/home/hayer/itmat/benchmark_quantifiers/index/sailfish_transcripts_index"
