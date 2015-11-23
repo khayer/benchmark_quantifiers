@@ -20,6 +20,7 @@ sailfish_index: "/home/hayer/itmat/benchmark_quantifiers/index/sailfish_transcri
 trinity: "/home/hayer/itmat/benchmark_quantifiers/tools/trinityrnaseq-2.1.1/Trinity"
 trinity_grid: "/home/hayer/itmat/benchmark_quantifiers/tools/trinityrnaseq-2.1.1/lsf_conf_file.txt"
 trinity_quant: "/home/hayer/itmat/benchmark_quantifiers/tools/trinityrnaseq-2.1.1/util/align_and_estimate_abundance.pl"
-
+isoem: "/home/hayer/itmat/benchmark_quantifiers/tools/isoem-1.1.3/bin/isoem"
+isoem_cluster: "/home/hayer/itmat/benchmark_quantifiers/index/cluster_ISOEM_knownToEnsembl.txt"
 gmap: "/home/hayer/tools/gmap-current/bin/gmap"
 

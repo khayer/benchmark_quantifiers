@@ -20,4 +20,19 @@ class IsoEM < FileFormats
     end
   end
 
+  def template(mode = "default")
+    t = "#!/bin/bash -e\n"
+    t += "#BSUB -J IsoEM\n"
+    t += "#BSUB -o IsoEM.%J.out\n"
+    t += "#BSUB -e IsoEM.%J.error\n"
+    t += "#BSUB -M 40000\n"
+    case mode
+      # -c  -m 260 -d 40 -s ../VC.ENS.PL.sam
+    when "default"
+      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -n <%= @frag_len_stddev %> -s <%= @align_bam %>\n"
+    when "bias"
+      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -n <%= @frag_len_stddev %> -b yes -s <%= @align_bam %>\n"
+    end
+  end
+
 end
