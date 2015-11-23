@@ -42,7 +42,7 @@ class Trinity < FileFormats
     t += "#BSUB -M 16000\n"
     t += "module load java-sdk-1.7.0\n"
     t += "<%= @trinity %> "
-    t += "--grid_conf <%= @trinity_grid %>"
+    t += "--grid_conf <%= @trinity_grid %> "
     t += "--genome_guided_bam <%= @align_bam %> "
     t += "--genome_guided_max_intron 1000000 "
     t += "--max_memory 10G --CPU 10 "
