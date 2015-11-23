@@ -17,3 +17,9 @@ rsem_index: "/home/hayer/itmat/benchmark_quantifiers/index/RSEM_mm9_ucsc_all_num
 stringtie: "/home/hayer/itmat/benchmark_quantifiers/tools/stringtie-1.1.2.Linux_x86_64/stringtie"
 sailfish: "/home/hayer/itmat/benchmark_quantifiers/tools/SailfishBeta-0.8.0_DebianSqueeze/bin/sailfish"
 sailfish_index: "/home/hayer/itmat/benchmark_quantifiers/index/sailfish_transcripts_index"
+trinity: "/home/hayer/itmat/benchmark_quantifiers/tools/trinityrnaseq-2.1.1/Trinity"
+trinity_grid: "/home/hayer/itmat/benchmark_quantifiers/tools/trinityrnaseq-2.1.1/lsf_conf_file.txt"
+trinity_quant: "/home/hayer/itmat/benchmark_quantifiers/tools/trinityrnaseq-2.1.1/util/align_and_estimate_abundance.pl"
+
+gmap: "/home/hayer/tools/gmap-current/bin/gmap"
+
