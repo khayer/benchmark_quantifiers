@@ -1,4 +1,4 @@
-class Sailfish < FileFormats
+class Trinity < FileFormats
 
   def initialize(filename)
     super(filename)
