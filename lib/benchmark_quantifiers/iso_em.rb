@@ -32,7 +32,7 @@ class IsoEM < FileFormats
     when "default"
       t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -s <%= @align_bam %>\n"
     when "bias"
-      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -b yes -s <%= @align_bam %>\n"
+      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -b -s <%= @align_bam %>\n"
     end
   end
 
