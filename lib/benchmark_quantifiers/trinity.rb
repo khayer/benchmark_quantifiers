@@ -63,7 +63,7 @@ class Trinity < FileFormats
     t += "--trinity_mode "
     t += "--prep_reference "
     t += "--SS_lib_type FR "
-    t += "--thread_count 10 \n"
+    t += "--thread_count 10 --output_dir .\n"
   end
 
 end
