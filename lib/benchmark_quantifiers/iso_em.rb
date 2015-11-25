@@ -27,12 +27,13 @@ class IsoEM < FileFormats
     t += "#BSUB -e IsoEM.%J.error\n"
     t += "#BSUB -M 40000\n"
     t += "module load java-sdk-1.7.0\n"
+    t += "ln -s <%= @align_bam %> aligned.bam"
     case mode
       # -c  -m 260 -d 40 -s ../VC.ENS.PL.sam
     when "default"
-      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -s <%= @align_bam %>\n"
+      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -s aligned.bam\n"
     when "bias"
-      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -b -s <%= @align_bam %>\n"
+      t += "<%= @isoem %> -G <%= @annotation_gtf %> -c <%= @isoem_cluster %> -m <%= @frag_len_mean %> -d <%= @frag_len_stddev %> -b -s aligned.bam\n"
     end
   end
 
