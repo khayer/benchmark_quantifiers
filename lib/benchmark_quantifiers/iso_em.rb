@@ -27,7 +27,7 @@ class IsoEM < FileFormats
     t += "#BSUB -e IsoEM.%J.error\n"
     t += "#BSUB -M 40000\n"
     t += "module load java-sdk-1.7.0\n"
-    t += "ln -s <%= @align_bam %> aligned.bam"
+    t += "ln -s <%= @align_bam %> aligned.bam\n"
     case mode
       # -c  -m 260 -d 40 -s ../VC.ENS.PL.sam
     when "default"
