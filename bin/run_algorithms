@@ -298,7 +298,8 @@ def run(argv)
           if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             Dir.chdir "#{options[:out_path]}"
             comp = get_comp2(d)
-            cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.#{d}.txt -t transcripts.gtf #{comp} \\> stats_auto.txt"
+            comp_metrics = get_comp(d)
+            cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t transcripts.gtf #{comp} \\> stats_auto.txt"
             $logger.debug cmd
             jobnumber = submit(cmd,options)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
@@ -436,7 +437,8 @@ def run(argv)
           if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             Dir.chdir "#{options[:out_path]}"
             comp = get_comp2(d)
-            cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.#{d}.txt -t result.gtf #{comp} \\> stats_auto.txt"
+            comp_metrics = get_comp(d)
+            cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t result.gtf #{comp} \\> stats_auto.txt"
             $logger.debug cmd
             jobnumber = submit(cmd,options)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
@@ -736,7 +738,8 @@ def run(argv)
           if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             Dir.chdir "#{options[:out_path]}"
             comp = get_comp2(d)
-            cmd = "bsub stats gtffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.#{d}.txt -t transcripts.gtf #{comp} \\> stats_auto.txt"
+            comp_metrics = get_comp(d)
+            cmd = "bsub stats gtffq -n #{comp_metrics} -t transcripts.gtf #{comp} \\> stats_auto.txt"
             $logger.debug cmd
             jobnumber = submit(cmd,options)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
@@ -815,7 +818,8 @@ def run(argv)
           if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             Dir.chdir "#{options[:out_path]}"
             comp = get_comp2(d)
-            cmd = "bsub stats gfffq -n /home/hayer/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.#{d}.txt -t trinity_out_dir/gmap_result.gff #{comp} \\> stats_auto.txt"
+            comp_metrics = get_comp(d)
+            cmd = "bsub stats gfffq -n #{comp_metrics} -t trinity_out_dir/gmap_result.gff #{comp} \\> stats_auto.txt"
             $logger.debug cmd
             jobnumber = submit(cmd,options)
             options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
