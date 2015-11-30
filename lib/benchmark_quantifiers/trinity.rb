@@ -66,4 +66,17 @@ class Trinity < FileFormats
     t += "--thread_count 10 --output_dir .\n"
   end
 
+  def Trinity.fix_RSEM_isoforms_results(isoform_results, out_file, transcript_gff, comp)
+    #transcript_id gene_id length  effective_length  expected_count  TPM FPKM  IsoPct
+    #TRINITY_GG_10000_c0_g1_i1 TRINITY_GG_10000_c0_g1  429 168.37  35.00 5.60  4.76  100.00
+    #TRINITY_GG_10001_c0_g1_i1 TRINITY_GG_10001_c0_g1  318 60.17 0.00  0.00  0.00  0.00
+    #TRINITY_GG_10002_c0_g1_i1 TRINITY_GG_10002_c0_g1  1820  1559.31 796.86  13.78 11.70 100.00
+    #TRINITY_GG_10002_c0_g2_i1 TRINITY_GG_10002_c0_g2  1543  1282.31 82.14 1.73  1.47  100.00
+    #TRINITY_GG_10002_c1_g1_i1 TRINITY_GG_10002_c1_g1  377 116.69  4.00  0.92  0.78  100.00
+    #TRINITY_GG_10002_c2_g1_i1 TRINITY_GG_10002_c2_g1  369 108.82  6.00  1.49  1.26  100.00
+    #TRINITY_GG_10003_c0_g1_i1 TRINITY_GG_10003_c0_g1  259 14.84 1.00  1.82  1.55  100.00
+    #TRINITY_GG_10004_c0_g1_i1 TRINITY_GG_10004_c0_g1  418 157.39  0.00  0.00  0.00  0.00
+    RSEM.new(isoform_results)
+  end
+
 end
