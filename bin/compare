@@ -20,6 +20,7 @@ $algorithms = [
   :express,
   :ireckon,
   :isoem,
+  :isolasso,
   :kallisto,
   :pennseq,
   :rsem,
@@ -114,6 +115,11 @@ def run(argv)
   when :isoem
     $logger.debug("IsoEM")
     estimated = IsoEM.new(estimated)
+    estimated.read_file()
+    fpkm = true
+  when :isolasso
+    $logger.debug("IsoLasso")
+    estimated = IsoLasso.new(estimated)
     estimated.read_file()
     fpkm = true
   when :kallisto
