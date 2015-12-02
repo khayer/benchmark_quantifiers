@@ -34,6 +34,7 @@ $algorithms = [
 $datasets = {
   :P => "VC_ENSEMBL_PERFECT",
   :PL => "VC_ENSEMBL_PERFECT_LONG",
+  :PLT => "VC_ENSEMBL_PERFECT_LONG_TRIMMED",
   :PS => "VC_ENSEMBL_PERFECT_SHORT",
   :RP => "VC_ENSEMBL_RIBOZ_PERFECT",
   :RPL => "VC_ENSEMBL_RIBOZ_PERFECT_LONG",
@@ -51,7 +52,7 @@ $datasets = {
 
 def get_frag_len_metrics(d)
   case
-  when d =~ /L$/
+  when d =~ /L$/ || d =~ /T$/
     mean_FLD = 269
     std_FLD = 39
   when d =~ /S$/
@@ -67,7 +68,7 @@ end
 
 def get_comp(d)
   case
-  when d =~ /L$/
+  when d =~ /L$/ || d =~ /T$/
     comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PLD.txt"
   when d =~ /S$/
     comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PSD.txt"
@@ -79,7 +80,7 @@ end
 
 def get_comp2(d)
   case
-  when d =~ /L$/
+  when d =~ /L$/ || d =~ /T$/
    comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PLD"
   when d =~ /S$/
    comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PSD"
