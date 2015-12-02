@@ -16,7 +16,7 @@ def trim_back(sam_line)
   new_cigar = ""
   letters.each_with_index do |l,i|
     case l
-    when "M" || "I"
+    when "M" || "I" || "H" || "S"
       if num < desired_length
         if numbers[i] + num > desired_length
           current = desired_length - num
@@ -44,6 +44,9 @@ def trim_back(sam_line)
     end
   end
   fields[5] = new_cigar
+  if fields[1] == "83"
+    fields[3] = fields[3].to_i + DROP
+  end
   fields.join("\t")
 end
 
@@ -52,7 +55,7 @@ def trim_front(sam_line)
   fields = sam_line.split("\t")
   # Trim sequence
   desired_length = fields[9].length - DROP
-  fields[9] = fields[9][(DROP-1)...-1]
+  fields[9] = fields[9][0...desired_length]
 
   # Trim Cigar
   # 5M3987N90M2282N52M4697N3M
@@ -62,9 +65,14 @@ def trim_front(sam_line)
   new_cigar = ""
   letters.reverse!
   numbers.reverse!
+  old_position = fields[3].to_i
+  old_stretch = 0
   letters.each_with_index do |l,i|
     case l
     when "M" || "I" || "S" || "H"
+      if l == "M"
+        old_stretch += numbers[i]
+      end
       if num < desired_length
         if numbers[i] + num > desired_length
           current = desired_length - num
@@ -78,9 +86,15 @@ def trim_front(sam_line)
       #puts new_cigar
       #exit
     when "N" || "D"
+      old_stretch += numbers[i]
       new_cigar = "#{numbers[i]}#{l}#{new_cigar}"
     end
   end
+  #puts old_position
+  #puts old_stretch
+  new_start = old_position + old_stretch
+  #puts new_start
+  #puts new_cigar
   if new_cigar =~ /^\d*N/ || new_cigar =~ /^\d*D/
     numbers = (new_cigar.split(/\D/) - [""]).map { |e| e.to_i }
     letters = new_cigar.split(/\d*/) - [""]
@@ -88,9 +102,23 @@ def trim_front(sam_line)
     letters.each_with_index do |l,i|
       next if i == 0
       new_cigar += "#{numbers[i]}#{l}"
+      #new_start = new_start - numbers[i] if l == "M" || l == "N" || l == "D"
     end
   end
+
+  numbers = (new_cigar.split(/\D/) - [""]).map { |e| e.to_i }
+  letters = new_cigar.split(/\d*/) - [""]
+  letters.each_with_index do |l,i|
+    new_start -= numbers[i] if l == "M" || l == "N" || l == "D"
+  end
+
   fields[5] = new_cigar
+  fields[3] = new_start
+  if fields[1] == "147"
+    fields[3] #+= DROP
+  else
+    fields[3] = old_position
+  end
   fields.join("\t")
 end
 

@@ -25,4 +25,3 @@ isoem_cluster: "/home/hayer/itmat/benchmark_quantifiers/index/cluster_ISOEM_know
 gmap: "/home/hayer/tools/gmap-current/bin/gmap"
 isolasso: "/home/hayer/itmat/benchmark_quantifiers/tools/isolasso/bin/runlasso.py"
 isolasso_ref: "/project/itmatlab/for_katharina/greg_new/annotation/ensembl_mm9_nov_2015_filtered.bed_SORTED "
-
