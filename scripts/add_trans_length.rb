@@ -7,7 +7,7 @@ File.open("../annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF").each
   lengths[id] ||= 0
   fields = line.split("\t")
   next unless fields[2] == "exon"
-  lengths[id] += fields[4].to_i - fields[3].to_i
+  lengths[id] += fields[4].to_i - fields[3].to_i + 1
   num_exons[id] ||= 0
   num_exons[id] += 1
 end
