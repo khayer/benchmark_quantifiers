@@ -81,11 +81,11 @@ end
 def get_comp2(d)
   case
   when d =~ /L$/ || d =~ /T$/
-   comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PLD"
+   comp = "/project/itmatlab/for_katharina/sim_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PLD"
   when d =~ /S$/
-   comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PSD"
+   comp = "/project/itmatlab/for_katharina/sim_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PSD"
   else
-   comp = "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PD"
+   comp = "/project/itmatlab/for_katharina/sim_new/annotation/simulator_config_featurequantifications_mm9-ensembl-stdchr_ENS_PD"
   end
 end
 
