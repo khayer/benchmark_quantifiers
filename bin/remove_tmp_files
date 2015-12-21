@@ -164,12 +164,11 @@ end
 
 def run(argv)
   options = setup_options(argv)
-  options.merge!(Hash[YAML::load(File.open(argv[3])).map { |k, v| [k.to_sym, v] }])
+  #options.merge!(Hash[YAML::load(File.open(argv[3])).map { |k, v| [k.to_sym, v] }])
   $logger.debug options
   algorithms_selected = argv[1].split(",").map { |e| e.to_sym }
   $logger.debug "Slected algorithms are #{algorithms_selected}"
   if algorithms_selected[0] == :all
-    puts "JAS"
     algorithms_selected = $algorithms
   end
   $logger.debug "Slected algorithms are #{algorithms_selected}"
