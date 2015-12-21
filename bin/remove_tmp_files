@@ -1,0 +1,411 @@
+#!/usr/bin/env ruby
+require "benchmark_quantifiers"
+require "optparse"
+require 'yaml'
+#require 'logger'
+#require './logging'
+#include Logging
+#require 'optparse'
+#require "erubis"
+
+#####
+#
+#
+####
+
+# 2015/11/03 Katharina Hayer
+
+$logger = Logger.new(STDERR)
+$algorithms = [
+  :all,
+  :cufflinks,
+  :express,
+  :ireckon,
+  :isoem,
+  :isolasso,
+  :kallisto,
+  :pennseq,
+  :rsem,
+  :sailfish,
+  :stringtie,
+  :trinity
+]
+
+$datasets = {
+  :P => "VC_ENSEMBL_PERFECT",
+  :PL => "VC_ENSEMBL_PERFECT_LONG",
+  :PLT => "VC_ENSEMBL_PERFECT_LONG_TRIMMED",
+  :PS => "VC_ENSEMBL_PERFECT_SHORT",
+  :RP => "VC_ENSEMBL_RIBOZ_PERFECT",
+  :RPL => "VC_ENSEMBL_RIBOZ_PERFECT_LONG",
+  :RPS => "VC_ENSEMBL_RIBOZ_PERFECT_SHORT",
+  :RE => "VC_ENSEMBL_RIBOZ_EFFECTS",
+  :REL => "VC_ENSEMBL_RIBOZ_EFFECTS_LONG",
+  :RES => "VC_ENSEMBL_RIBOZ_EFFECTS_SHORT",
+  :PP => "VC_ENSEMBL_POLYA_PERFECT",
+  :PPL => "VC_ENSEMBL_POLYA_PERFECT_LONG",
+  :PPS => "VC_ENSEMBL_POLYA_PERFECT_SHORT",
+  :PE => "VC_ENSEMBL_POLYA_EFFECTS",
+  :PEL => "VC_ENSEMBL_POLYA_EFFECTS_LONG",
+  :PES => "VC_ENSEMBL_POLYA_EFFECTS_SHORT",
+}
+
+#Tree
+#.
+#├── VC_ENSEMBL_PERFECT
+#├── VC_ENSEMBL_PERFECT_LONG
+#│   ├── cufflinks
+#│   ├── cufflinks_abinitio
+#│   ├── cufflinks_bias
+#│   ├── express
+#│   ├── iReckon
+#│   ├── isoem
+#│   ├── kallisto
+#│   ├── kallisto_bias
+#│   └── rsem
+#├── VC_ENSEMBL_PERFECT_SHORT
+#├── VC_ENSEMBL_POLYA_EFFECTS
+#├── VC_ENSEMBL_POLYA_EFFECTS_LONG
+#├── VC_ENSEMBL_POLYA_EFFECTS_SHORT
+#├── VC_ENSEMBL_POLYA_PERFECT
+#├── VC_ENSEMBL_POLYA_PERFECT_LONG
+#├── VC_ENSEMBL_POLYA_PERFECT_SHORT
+#├── VC_ENSEMBL_RIBOZ_EFFECTS
+#├── VC_ENSEMBL_RIBOZ_EFFECTS_LONG
+#├── VC_ENSEMBL_RIBOZ_EFFECTS_SHORT
+#├── VC_ENSEMBL_RIBOZ_PERFECT
+#├── VC_ENSEMBL_RIBOZ_PERFECT_LONG
+#└── VC_ENSEMBL_RIBOZ_PERFECT_SHORT
+
+# Initialize logger
+def setup_logger(loglevel)
+  case loglevel
+  when "debug"
+    $logger.level = Logger::DEBUG
+  when "warn"
+    $logger.level = Logger::WARN
+  when "info"
+    $logger.level = Logger::INFO
+  else
+    $logger.level = Logger::ERROR
+  end
+end
+
+def submit(cmd, options)
+  if options[:debug]
+    $logger.debug("In submit: #{cmd}")
+    return 1234
+  else
+    begin
+      l = `#{cmd}`
+    rescue Exception => e
+      $logger.error(e)
+      $logger.error("something went wrong with #{cmd}")
+      return 1
+    end
+    #num = l.split(/\W/)[2].to_i
+  end
+  #num
+end
+
+def setup_options(args)
+  options = {
+    :debug => false,
+    :print => false,
+    :data_path => nil,
+    :annotation_gtf => nil,
+    :align_bam => nil,
+    :out_path => nil,
+    :jobs => []
+  }
+
+  opt_parser = OptionParser.new do |opts|
+    opts.banner = "\nUsage: remove_tmp_files datasets algorithm tree_base"
+    opts.separator ""
+    opts.separator "      datasets = Comma separated list of datasets"
+    opts.separator "                 e.g. PPL,PEL"
+    opts.separator "     algorithm = Comma separated list of algorithms"
+    opts.separator "                 e.g. cufflinks,stringtie"
+    opts.separator "e.g. tree_base = /home/hayer/itmat/benchmark_quantifiers"
+    opts.separator ""
+
+    opts.on("-d", "--debug", "Run in debug mode") do |v|
+      options[:log_level] = "debug"
+      options[:debug] = true
+    end
+
+    #opts.on("-p", "--print", "print numbers to STDOUT") do |v|
+    #  options[:print] = true
+    #end
+
+    opts.on("-v", "--verbose", "Run verbosely") do |v|
+      options[:log_level] = "info"
+    end
+    opts.separator ""
+    opts.separator "Available datasets are:"
+    opts.separator "#{$datasets.keys.join("\n")}"
+    opts.separator ""
+    opts.separator "Available algorithms are:"
+    opts.separator "#{$algorithms.join("\n")}"
+    opts.separator ""
+    opts.separator "RunExample: bin/remove_tmp_files PS all test/sample_tree -d"
+    opts.separator ""
+  end
+
+  args = ["-h"] if args.length == 0
+  opt_parser.parse!(args)
+  setup_logger(options[:log_level])
+  if args.length != 3
+    $logger.error("You only provided #{args.length} fields, but 3 required!")
+    raise "Please specify the input (datasets algorithm tree_base)"
+  end
+  options
+end
+
+def run(argv)
+  options = setup_options(argv)
+  options.merge!(Hash[YAML::load(File.open(argv[3])).map { |k, v| [k.to_sym, v] }])
+  $logger.debug options
+  algorithms_selected = argv[1].split(",").map { |e| e.to_sym }
+  $logger.debug "Slected algorithms are #{algorithms_selected}"
+  if algorithms_selected[0] == :all
+    puts "JAS"
+    algorithms_selected = $algorithms
+  end
+  $logger.debug "Slected algorithms are #{algorithms_selected}"
+  for algorithm in algorithms_selected
+    raise "Algorithm #{algorithm} is not supported; but there is #{$algorithms.join(", ")}" unless $algorithms.include?(algorithm)
+  end
+  dataset = argv[0].split(",").map { |e| e.to_sym }
+  for d in dataset
+    raise "Dataset #{d} is not supported; but there is #{$datasets.keys.join(", ")}" unless $datasets.keys.include?(d)
+  end
+  current_dir = Dir.pwd
+  tree_base = argv[2]
+  $logger.debug "First phase done!"
+  $logger.debug "Slected algorithms are #{algorithms_selected}"
+  for d in dataset
+    $logger.debug "Current dataset #{d}"
+    $datasets[d] =~ /_EFFECTS/  ? effected = true : effected = false
+    $logger.debug "Effected? #{effected}"
+    options[:data_path] = "#{tree_base}/#{$datasets[d]}"
+
+
+    for algorithm in algorithms_selected
+      case algorithm
+      when :cufflinks
+        $logger.debug("Cufflinks")
+        for mode in %w{default abinitio bias}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/cufflinks"
+          else
+            options[:out_path] = "#{options[:data_path]}/cufflinks/#{mode}"
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            # PICKUP TMP FILES
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "echo Nothing to do here"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "echo Nothing to do here"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+
+       when :express
+        $logger.debug("eXpress")
+        for mode in %w{default no_bias no_error}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/express"
+          else
+            options[:out_path] = "#{options[:data_path]}/express/#{mode}"
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "rm hits.bam"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      when :ireckon
+        $logger.debug("IReckon")
+        for mode in %w{default abinitio bias_1 bias_2}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/ireckon"
+          else
+            options[:out_path] = "#{options[:data_path]}/ireckon/#{mode}"
+          end
+          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "rm reference0.fa.gz* *sam resulttemp.gtf *sai"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      when :isoem
+        $logger.debug("IsoEM")
+        for mode in %w{default bias}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/isoem"
+          else
+            options[:out_path] = "#{options[:data_path]}/isoem/#{mode}"
+          end
+
+          if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "echo Nothing to do here"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      when :isolasso
+        $logger.debug("IsoLasso")
+        for mode in %w{default abinitio bias em}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/isolasso"
+          else
+            options[:out_path] = "#{options[:data_path]}/isolasso/#{mode}"
+          end
+
+          if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "rm iso_res.instance"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      when :kallisto
+        $logger.debug("Kallisto")
+        for mode in %w{default bias}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/kallisto"
+          else
+            options[:out_path] = "#{options[:data_path]}/kallisto/#{mode}"
+          end
+
+          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "echo Nothing to do here"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      when :rsem
+        $logger.debug("RSEM")
+        for mode in %w{default }
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/rsem"
+          else
+            options[:out_path] = "#{options[:data_path]}/rsem/#{mode}"
+          end
+
+          if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            comp = get_comp(d)
+            cmd = "rm rsem*.transcript.sorted.bam* rsem*.transcript.bam*"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      when :pennseq
+        $logger.debug("pennseq")
+        $logger.info("Pennseq is not implemented yet!")
+        #estimated = Pennseq.new(estimated)
+        #estimated.read_file()
+        #fpkm = true
+      when :sailfish
+        $logger.debug("Sailfish")
+        #for mode in %w{default bias}
+        options[:out_path] = "#{options[:data_path]}/sailfish"
+
+        done = false
+        for mode in %w{default bias}
+          if Functions.check_if_results_exist("#{options[:out_path]}/sailfish.out/quant_bias_corrected.sf")
+            done = true
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            if mode == "default"
+              if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+                Dir.chdir "#{options[:out_path]}"
+                cmd = "echo Nothing to do here"
+                $logger.debug cmd
+                submit(cmd,options)
+                Dir.chdir current_dir
+              end
+            else
+              if Functions.check_if_results_exist("#{options[:out_path]}/bias/compare_stats.txt")
+                Dir.chdir "#{options[:out_path]}/bias"
+                cmd = "echo Nothing to do here"
+                $logger.debug cmd
+                submit(cmd,options)
+                Dir.chdir current_dir
+              end
+            end
+          end
+        end
+      when :stringtie
+        $logger.debug("StringTie")
+        for mode in %w{default abinitio}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/stringtie"
+          else
+            options[:out_path] = "#{options[:data_path]}/stringtie/#{mode}"
+          end
+
+          if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            Dir.chdir "#{options[:out_path]}"
+            cmd = "echo Nothing to do here"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      when :trinity
+        $logger.debug("Trinity")
+        for mode in %w{abinitio}
+          if mode == "abinitio"
+            options[:out_path] = "#{options[:data_path]}/trinity"
+          else
+            options[:out_path] = "#{options[:data_path]}/trinity/#{mode}"
+          end
+
+          if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+            Dir.chdir "#{options[:out_path]}/trinity_out_dir"
+            cmd = "rm Trinity-GG.fasta.bowtie.*ebwt Trinity-GG.fasta.RSEM.grp Trinity-GG.fasta.RSEM.seq Trinity-GG.fasta.RSEM.ti Trinity-GG.fasta.RSEM.idx.fa Trinity-GG.fasta.RSEM.transcripts.fa bowtie.bam"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir "#{options[:data_path]}"
+            cmd = "rm VC.ENS.P.s.bam.+.sam* VC.ENS.P.s.bam.-.sam*"
+            $logger.debug cmd
+            submit(cmd,options)
+            Dir.chdir current_dir
+          end
+        end
+      end
+    end
+    options[:align_bam] = nil
+  end
+
+  monitor_jobs(options[:jobs])
+  $logger.info("All done!")
+end
+
+if __FILE__ == $0
+  run(ARGV)
+end
+
+
+
+
+

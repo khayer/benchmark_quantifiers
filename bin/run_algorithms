@@ -228,7 +228,7 @@ def run(argv)
   algorithms_selected = argv[1].split(",").map { |e| e.to_sym }
   $logger.debug "Slected algorithms are #{algorithms_selected}"
   if algorithms_selected[0] == :all
-    puts "JAS"
+    #puts "JAS"
     algorithms_selected = $algorithms
   end
   $logger.debug "Slected algorithms are #{algorithms_selected}"
