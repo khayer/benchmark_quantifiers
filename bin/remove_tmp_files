@@ -385,6 +385,7 @@ def run(argv)
             submit(cmd,options)
             Dir.chdir "#{options[:data_path]}"
             cmd = "rm VC.ENS.*.s.bam.+.sam* VC.ENS.*.s.bam.-.sam*"
+            cmd = "rm tophat_out/accepted_hits.bam.+.sam* tophat_out/accepted_hits.bam.-.sam*"
             $logger.debug cmd
             submit(cmd,options)
             Dir.chdir current_dir
