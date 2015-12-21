@@ -146,7 +146,8 @@ def setup_options(args)
     opts.separator ""
     opts.separator "      datasets = Comma separated list of datasets"
     opts.separator "                 e.g. PPL,PEL"
-    opts.separator "e.g. algorithm = cufflinks"
+    opts.separator "     algorithm = Comma separated list of algorithms"
+    opts.separator "                 e.g. cufflinks,stringtie"
     opts.separator "e.g. tree_base = /home/hayer/itmat/benchmark_quantifiers"
     opts.separator "e.g. config    = config.yml"
     opts.separator ""
@@ -156,9 +157,9 @@ def setup_options(args)
       options[:debug] = true
     end
 
-    opts.on("-p", "--print", "print numbers to STDOUT") do |v|
-      options[:print] = true
-    end
+    #opts.on("-p", "--print", "print numbers to STDOUT") do |v|
+    #  options[:print] = true
+    #end
 
     opts.on("-v", "--verbose", "Run verbosely") do |v|
       options[:log_level] = "info"
@@ -170,8 +171,8 @@ def setup_options(args)
     opts.separator "Available algorithms are:"
     opts.separator "#{$algorithms.join("\n")}"
     opts.separator ""
-    #opts.separator "RunExample: bin/compare files/transcript_metrics_ENS.PLD.txt files/cufflinks.isoforms.fpkm_tracking cufflinks -d -p > tmp"
-    #opts.separator ""
+    opts.separator "RunExample: bin/run_algorithms PS all test/sample_tree config.yml -d"
+    opts.separator ""
   end
 
   args = ["-h"] if args.length == 0
@@ -224,8 +225,16 @@ def run(argv)
   options = setup_options(argv)
   options.merge!(Hash[YAML::load(File.open(argv[3])).map { |k, v| [k.to_sym, v] }])
   $logger.debug options
-  algorithm = argv[1].to_sym
-  raise "Algorithm #{algorithm} is not supported; but there is #{$algorithms.join(", ")}" unless $algorithms.include?(algorithm)
+  algorithms_selected = argv[1].split(",").map { |e| e.to_sym }
+  $logger.debug "Slected algorithms are #{algorithms_selected}"
+  if algorithms_selected[0] == :all
+    puts "JAS"
+    algorithms_selected = $algorithms
+  end
+  $logger.debug "Slected algorithms are #{algorithms_selected}"
+  for algorithm in algorithms_selected
+    raise "Algorithm #{algorithm} is not supported; but there is #{$algorithms.join(", ")}" unless $algorithms.include?(algorithm)
+  end
   dataset = argv[0].split(",").map { |e| e.to_sym }
   for d in dataset
     raise "Dataset #{d} is not supported; but there is #{$datasets.keys.join(", ")}" unless $datasets.keys.include?(d)
@@ -233,565 +242,474 @@ def run(argv)
   current_dir = Dir.pwd
   tree_base = argv[2]
   $logger.debug "First phase done!"
-
+  $logger.debug "Slected algorithms are #{algorithms_selected}"
   for d in dataset
     $logger.debug "Current dataset #{d}"
     $datasets[d] =~ /_EFFECTS/  ? effected = true : effected = false
     $logger.debug "Effected? #{effected}"
     options[:data_path] = "#{tree_base}/#{$datasets[d]}"
-
     options[:fwd_reads] = "#{tree_base}/reads/VC.ENS.#{d}_fwd.fq"
     options[:rev_reads] = "#{tree_base}/reads/VC.ENS.#{d}_rev.fq"
 
     options[:frag_len_mean], options[:frag_len_stddev] = get_frag_len_metrics(d)
-    case algorithm
 
-    when :cufflinks
-      $logger.debug("Cufflinks")
-      for mode in %w{default abinitio bias}
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/cufflinks"
-        else
-          options[:out_path] = "#{options[:data_path]}/cufflinks/#{mode}"
-        end
-        Dir.glob("#{options[:data_path]}/*").each do |p|
-          $logger.debug "p #{p}"
-          if effected
-            next unless File.directory? p
-            if p =~ /tophat_out$/
-              next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
-              options[:align_bam] = "#{p}/accepted_hits.bam"
-              break
+    for algorithm in algorithms_selected
+      case algorithm
+      when :cufflinks
+        $logger.debug("Cufflinks")
+        for mode in %w{default abinitio bias}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/cufflinks"
+          else
+            options[:out_path] = "#{options[:data_path]}/cufflinks/#{mode}"
+          end
+          Dir.glob("#{options[:data_path]}/*").each do |p|
+            $logger.debug "p #{p}"
+            if effected
+              next unless File.directory? p
+              if p =~ /tophat_out$/
+                next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
+                options[:align_bam] = "#{p}/accepted_hits.bam"
+                break
+              end
+            else
+              next if File.directory? p
+              if p =~ /VC.ENS.#{d}.s.bam$/
+                next unless Functions.check_if_results_exist(p)
+                options[:align_bam] = p
+                break
+              end
             end
-          else
-            next if File.directory? p
-            if p =~ /VC.ENS.#{d}.s.bam$/
-              next unless Functions.check_if_results_exist(p)
-              options[:align_bam] = p
-              break
-            end
           end
-        end
-        unless options[:align_bam]
-          $logger.error "Couldn't find bam_file in #{options[:data_path]}"
-          next
-        end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
-          else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
-          end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/isoforms.fpkm_tracking")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} isoforms.fpkm_tracking cufflinks -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp2(d)
-            comp_metrics = get_comp(d)
-            cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t transcripts.gtf #{comp} \\> stats_auto.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = Cufflinks.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-
-     when :express
-      $logger.debug("eXpress")
-      for mode in %w{default no_bias no_error}
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/express"
-        else
-          options[:out_path] = "#{options[:data_path]}/express/#{mode}"
-        end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
-          else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
-          end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/results.xprs")
-          $logger.warn "Results for #{d} and #{algorithm} (mode #{mode}) already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} results.xprs express -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        if mode != "default"
-          # Check if bam file exists
-          k = `ls -lrth #{options[:data_path]}/express/express.*.out | tail -1`
-          if k == ""
-            $logger.warn "Bam file does not exist or is not complete. SKIPPING"
+          unless options[:align_bam]
+            $logger.error "Couldn't find bam_file in #{options[:data_path]}"
             next
           end
-          n = k.split(" ")[-1]
-          status = nil
-          File.open(n).each do |line|
-            next unless line =~ /^Subject:/
-            r = line.split(" ")[-1]
-            $logger.debug "R = #{r}"
-            status = true if r == "Done"
-          end
-          $logger.warn "Bam file does not exist or is not complete. SKIPPING" unless status
-          next unless status
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = Express.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :ireckon
-      $logger.debug("IReckon")
-      for mode in %w{default abinitio bias_1 bias_2}
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/ireckon"
-        else
-          options[:out_path] = "#{options[:data_path]}/ireckon/#{mode}"
-        end
-        Dir.glob("#{options[:data_path]}/*").each do |p|
-          $logger.debug "p #{p}"
-          if effected
-            next unless File.directory? p
-            if p =~ /tophat_out$/
-              next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
-              options[:align_bam] = "#{p}/accepted_hits.bam"
-              break
-            end
-          else
-            next if File.directory? p
-            if p =~ /VC.ENS.#{d}.s.bam$/
-              next unless Functions.check_if_results_exist(p)
-              options[:align_bam] = p
-              break
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
             end
           end
-        end
-        unless options[:align_bam]
-          $logger.error "Couldn't find bam_file in #{options[:data_path]}"
-          next
-        end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
-          else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
-          end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/result.gtf")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} result.gtf ireckon -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp2(d)
-            comp_metrics = get_comp(d)
-            cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t result.gtf #{comp} \\> stats_auto.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = IReckon.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :isoem
-      $logger.debug("IsoEM")
-      for mode in %w{default bias}
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/isoem"
-        else
-          options[:out_path] = "#{options[:data_path]}/isoem/#{mode}"
-        end
-        Dir.glob("#{options[:data_path]}/*").each do |p|
-          $logger.debug "p #{p}"
-          if effected
-            next unless File.directory? p
-            if p =~ /tophat_out$/
-              next unless Functions.check_if_results_exist("#{p}/accepted_hits.NO.sam")
-              options[:align_bam] = "#{p}/accepted_hits.NO.sam"
-              break
-            end
-          else
-            next if File.directory? p
-            if p =~ /VC.ENS.#{d}.sam$/
-              next unless Functions.check_if_results_exist(p)
-              options[:align_bam] = p
-              break
-            end
-          end
-        end
-        unless options[:align_bam]
-          $logger.error "Couldn't find sam_file in #{options[:data_path]}"
-          next
-        end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
-          else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
-          end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/aligned.bam.iso_estimates")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} aligned.bam.iso_estimates isoem -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = IsoEM.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :isolasso
-      $logger.debug("IsoLasso")
-      for mode in %w{default abinitio bias em}
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/isolasso"
-        else
-          options[:out_path] = "#{options[:data_path]}/isolasso/#{mode}"
-        end
-        Dir.glob("#{options[:data_path]}/*").each do |p|
-          $logger.debug "p #{p}"
-          if effected
-            next unless File.directory? p
-            if p =~ /tophat_out$/
-              next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
-              options[:align_bam] = "#{p}/accepted_hits.bam"
-              break
-            end
-          else
-            next if File.directory? p
-            if p =~ /VC.ENS.#{d}.s.bam$/
-              next unless Functions.check_if_results_exist(p)
-              options[:align_bam] = p
-              break
-            end
-          end
-        end
-        unless options[:align_bam]
-          $logger.error "Couldn't find bam_file in #{options[:data_path]}"
-          next
-        end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
-          else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
-          end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/iso_res.pred")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} iso_res.pred isolasso -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp2(d)
-            comp_metrics = get_comp(d)
-            cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t iso_res.pred.gtf #{comp} \\> stats_auto.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = IsoLasso.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :kallisto
-      $logger.debug("Kallisto")
-      for mode in %w{default bias}
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/kallisto"
-        else
-          options[:out_path] = "#{options[:data_path]}/kallisto/#{mode}"
-        end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
-          else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
-          end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/abundance.tsv")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} abundance.tsv kallisto -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = Kallisto.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :rsem
-      $logger.debug("RSEM")
-      for mode in %w{default }
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/rsem"
-        else
-          options[:out_path] = "#{options[:data_path]}/rsem/#{mode}"
-        end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
-          else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
-          end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/rsem.isoforms.results")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} rsem*.isoforms.results rsem -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = RSEM.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :pennseq
-      $logger.debug("pennseq")
-      estimated = Pennseq.new(estimated)
-      estimated.read_file()
-      fpkm = true
-    when :sailfish
-      $logger.debug("Sailfish")
-      #for mode in %w{default bias}
-      options[:out_path] = "#{options[:data_path]}/sailfish"
-      begin
-        Dir.mkdir(options[:out_path])
-      rescue SystemCallError
-        if Dir.exist?(options[:out_path])
-          $logger.warn("Directory #{options[:out_path]} exists!")
-        else
-          $logger.error("Can't create directory #{options[:out_path]}!")
-          raise("Trouble creating directory, log for details.")
-        end
-      end
-      done = false
-      for mode in %w{default bias}
-        if Functions.check_if_results_exist("#{options[:out_path]}/sailfish.out/quant_bias_corrected.sf")
-          done = true
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          if mode == "default"
+          if Functions.check_if_results_exist("#{options[:out_path]}/isoforms.fpkm_tracking")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
             unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
               Dir.chdir "#{options[:out_path]}"
               comp = get_comp(d)
-              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} sailfish.out/quant.sf sailfish -v -p \\> compare.txt 2\\> compare_stats.txt"
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} isoforms.fpkm_tracking cufflinks -v -p \\> compare.txt 2\\> compare_stats.txt"
               $logger.debug cmd
               jobnumber = submit(cmd,options)
               options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
               Dir.chdir current_dir
             end
+            if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp2(d)
+              comp_metrics = get_comp(d)
+              cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t transcripts.gtf #{comp} \\> stats_auto.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = Cufflinks.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
+        end
+
+       when :express
+        $logger.debug("eXpress")
+        for mode in %w{default no_bias no_error}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/express"
           else
-            begin
-              Dir.mkdir("#{options[:out_path]}/bias")
-            rescue SystemCallError
-              if Dir.exist?("#{options[:out_path]}/bias")
-                $logger.warn("Directory #{options[:out_path]}/bias exists!")
-              else
-                $logger.error("Can't create directory #{options[:out_path]}/bias!")
-                raise("Trouble creating directory, log for details.")
+            options[:out_path] = "#{options[:data_path]}/express/#{mode}"
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/results.xprs")
+            $logger.warn "Results for #{d} and #{algorithm} (mode #{mode}) already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} results.xprs express -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          if mode != "default"
+            # Check if bam file exists
+            k = `ls -lrth #{options[:data_path]}/express/express.*.out | tail -1`
+            if k == ""
+              $logger.warn "Bam file does not exist or is not complete. SKIPPING"
+              next
+            end
+            n = k.split(" ")[-1]
+            status = nil
+            File.open(n).each do |line|
+              next unless line =~ /^Subject:/
+              r = line.split(" ")[-1]
+              $logger.debug "R = #{r}"
+              status = true if r == "Done"
+            end
+            $logger.warn "Bam file does not exist or is not complete. SKIPPING" unless status
+            next unless status
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = Express.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
+        end
+      when :ireckon
+        $logger.debug("IReckon")
+        for mode in %w{default abinitio bias_1 bias_2}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/ireckon"
+          else
+            options[:out_path] = "#{options[:data_path]}/ireckon/#{mode}"
+          end
+          Dir.glob("#{options[:data_path]}/*").each do |p|
+            $logger.debug "p #{p}"
+            if effected
+              next unless File.directory? p
+              if p =~ /tophat_out$/
+                next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
+                options[:align_bam] = "#{p}/accepted_hits.bam"
+                break
+              end
+            else
+              next if File.directory? p
+              if p =~ /VC.ENS.#{d}.s.bam$/
+                next unless Functions.check_if_results_exist(p)
+                options[:align_bam] = p
+                break
               end
             end
-            unless Functions.check_if_results_exist("#{options[:out_path]}/bias/compare_stats.txt")
-              Dir.chdir "#{options[:out_path]}/bias"
+          end
+          unless options[:align_bam]
+            $logger.error "Couldn't find bam_file in #{options[:data_path]}"
+            next
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/result.gtf")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
               comp = get_comp(d)
-              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} ../sailfish.out/quant_bias_corrected.sf sailfish -v -p \\> compare.txt 2\\> compare_stats.txt"
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} result.gtf ireckon -v -p \\> compare.txt 2\\> compare_stats.txt"
               $logger.debug cmd
               jobnumber = submit(cmd,options)
               options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
               Dir.chdir current_dir
             end
-          end
-        end
-      end
-      unless done
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = Sailfish.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :stringtie
-      $logger.debug("StringTie")
-      for mode in %w{default abinitio}
-        if mode == "default"
-          options[:out_path] = "#{options[:data_path]}/stringtie"
-        else
-          options[:out_path] = "#{options[:data_path]}/stringtie/#{mode}"
-        end
-        Dir.glob("#{options[:data_path]}/*").each do |p|
-          $logger.debug "p #{p}"
-          if effected
-            next unless File.directory? p
-            if p =~ /tophat_out$/
-              next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
-              options[:align_bam] = "#{p}/accepted_hits.bam"
-              break
+            if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp2(d)
+              comp_metrics = get_comp(d)
+              cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t result.gtf #{comp} \\> stats_auto.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
             end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = IReckon.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
+        end
+      when :isoem
+        $logger.debug("IsoEM")
+        for mode in %w{default bias}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/isoem"
           else
-            next if File.directory? p
-            if p =~ /VC.ENS.#{d}.s.bam$/
-              next unless Functions.check_if_results_exist(p)
-              options[:align_bam] = p
-              break
+            options[:out_path] = "#{options[:data_path]}/isoem/#{mode}"
+          end
+          Dir.glob("#{options[:data_path]}/*").each do |p|
+            $logger.debug "p #{p}"
+            if effected
+              next unless File.directory? p
+              if p =~ /tophat_out$/
+                next unless Functions.check_if_results_exist("#{p}/accepted_hits.NO.sam")
+                options[:align_bam] = "#{p}/accepted_hits.NO.sam"
+                break
+              end
+            else
+              next if File.directory? p
+              if p =~ /VC.ENS.#{d}.sam$/
+                next unless Functions.check_if_results_exist(p)
+                options[:align_bam] = p
+                break
+              end
             end
           end
+          unless options[:align_bam]
+            $logger.error "Couldn't find sam_file in #{options[:data_path]}"
+            next
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/aligned.bam.iso_estimates")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} aligned.bam.iso_estimates isoem -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = IsoEM.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
         end
-        unless options[:align_bam]
-          $logger.error "Couldn't find bam_file in #{options[:data_path]}"
-          next
+      when :isolasso
+        $logger.debug("IsoLasso")
+        for mode in %w{default abinitio bias em}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/isolasso"
+          else
+            options[:out_path] = "#{options[:data_path]}/isolasso/#{mode}"
+          end
+          Dir.glob("#{options[:data_path]}/*").each do |p|
+            $logger.debug "p #{p}"
+            if effected
+              next unless File.directory? p
+              if p =~ /tophat_out$/
+                next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
+                options[:align_bam] = "#{p}/accepted_hits.bam"
+                break
+              end
+            else
+              next if File.directory? p
+              if p =~ /VC.ENS.#{d}.s.bam$/
+                next unless Functions.check_if_results_exist(p)
+                options[:align_bam] = p
+                break
+              end
+            end
+          end
+          unless options[:align_bam]
+            $logger.error "Couldn't find bam_file in #{options[:data_path]}"
+            next
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/iso_res.pred")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} iso_res.pred isolasso -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp2(d)
+              comp_metrics = get_comp(d)
+              cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t iso_res.pred.gtf #{comp} \\> stats_auto.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = IsoLasso.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
         end
+      when :kallisto
+        $logger.debug("Kallisto")
+        for mode in %w{default bias}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/kallisto"
+          else
+            options[:out_path] = "#{options[:data_path]}/kallisto/#{mode}"
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/abundance.tsv")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} abundance.tsv kallisto -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = Kallisto.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
+        end
+      when :rsem
+        $logger.debug("RSEM")
+        for mode in %w{default }
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/rsem"
+          else
+            options[:out_path] = "#{options[:data_path]}/rsem/#{mode}"
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/rsem.isoforms.results")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} rsem*.isoforms.results rsem -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = RSEM.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
+        end
+      when :pennseq
+        $logger.debug("pennseq")
+        $logger.info("Pennseq is not implemented yet!")
+        #estimated = Pennseq.new(estimated)
+        #estimated.read_file()
+        #fpkm = true
+      when :sailfish
+        $logger.debug("Sailfish")
+        #for mode in %w{default bias}
+        options[:out_path] = "#{options[:data_path]}/sailfish"
         begin
           Dir.mkdir(options[:out_path])
         rescue SystemCallError
@@ -802,139 +720,218 @@ def run(argv)
             raise("Trouble creating directory, log for details.")
           end
         end
-        if Functions.check_if_results_exist("#{options[:out_path]}/transcripts.gtf")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
-            cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} transcripts.gtf stringtie -v -p \\> compare.txt 2\\> compare_stats.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp2(d)
-            comp_metrics = get_comp(d)
-            cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t transcripts.gtf #{comp} \\> stats_auto.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
-          end
-          next
-        end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = StringTie.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
-      end
-    when :trinity
-      $logger.debug("Trinity")
-      for mode in %w{abinitio}
-        if mode == "abinitio"
-          options[:out_path] = "#{options[:data_path]}/trinity"
-        else
-          options[:out_path] = "#{options[:data_path]}/trinity/#{mode}"
-        end
-        Dir.glob("#{options[:data_path]}/*").each do |p|
-          $logger.debug "p #{p}"
-          if effected
-            next unless File.directory? p
-            if p =~ /tophat_out$/
-              next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
-              options[:align_bam] = "#{p}/accepted_hits.bam"
-              break
-            end
-          else
-            next if File.directory? p
-            if p =~ /VC.ENS.#{d}.s.bam$/
-              next unless Functions.check_if_results_exist(p)
-              options[:align_bam] = p
-              break
+        done = false
+        for mode in %w{default bias}
+          if Functions.check_if_results_exist("#{options[:out_path]}/sailfish.out/quant_bias_corrected.sf")
+            done = true
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            if mode == "default"
+              unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+                Dir.chdir "#{options[:out_path]}"
+                comp = get_comp(d)
+                cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} sailfish.out/quant.sf sailfish -v -p \\> compare.txt 2\\> compare_stats.txt"
+                $logger.debug cmd
+                jobnumber = submit(cmd,options)
+                options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+                Dir.chdir current_dir
+              end
+            else
+              begin
+                Dir.mkdir("#{options[:out_path]}/bias")
+              rescue SystemCallError
+                if Dir.exist?("#{options[:out_path]}/bias")
+                  $logger.warn("Directory #{options[:out_path]}/bias exists!")
+                else
+                  $logger.error("Can't create directory #{options[:out_path]}/bias!")
+                  raise("Trouble creating directory, log for details.")
+                end
+              end
+              unless Functions.check_if_results_exist("#{options[:out_path]}/bias/compare_stats.txt")
+                Dir.chdir "#{options[:out_path]}/bias"
+                comp = get_comp(d)
+                cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} ../sailfish.out/quant_bias_corrected.sf sailfish -v -p \\> compare.txt 2\\> compare_stats.txt"
+                $logger.debug cmd
+                jobnumber = submit(cmd,options)
+                options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+                Dir.chdir current_dir
+              end
             end
           end
         end
-        unless options[:align_bam]
-          $logger.error "Couldn't find bam_file in #{options[:data_path]}"
-          next
+        unless done
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = Sailfish.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
         end
-        begin
-          Dir.mkdir(options[:out_path])
-        rescue SystemCallError
-          if Dir.exist?(options[:out_path])
-            $logger.warn("Directory #{options[:out_path]} exists!")
+      when :stringtie
+        $logger.debug("StringTie")
+        for mode in %w{default abinitio}
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/stringtie"
           else
-            $logger.error("Can't create directory #{options[:out_path]}!")
-            raise("Trouble creating directory, log for details.")
+            options[:out_path] = "#{options[:data_path]}/stringtie/#{mode}"
           end
-        end
-        if Functions.check_if_results_exist("#{options[:out_path]}/trinity_out_dir/RSEM.isoforms.results")
-          $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
-          #unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
-          #  Dir.chdir "#{options[:out_path]}"
-          #  comp = get_comp(d)
-          #  Trinity.fix_RSEM_isoforms_results("#{options[:out_path]}/trinity_out_dir/RSEM.isoforms.results",
-          #    "#{options[:out_path]}/RSEM.isoforms.results_fixed",
-          #    "#{options[:out_path]}/trinity_out_dir/gmap_result_transcripts.gff",
-          #    comp)
-          #  cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} RSEM.isoforms.results_fixed rsem -v -p \\> compare.txt 2\\> compare_stats.txt"
-          #  $logger.debug cmd
-          #  jobnumber = submit(cmd,options)
-          #  options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-          #  Dir.chdir current_dir
-          #end
-          if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
-            Dir.chdir "#{options[:out_path]}"
-            comp = get_comp2(d)
-            comp_metrics = get_comp(d)
-            cmd = "bsub stats gfffq -n #{comp_metrics} -t trinity_out_dir/gmap_result.gff #{comp} \\> stats_auto.txt"
-            $logger.debug cmd
-            jobnumber = submit(cmd,options)
-            options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-            Dir.chdir current_dir
+          Dir.glob("#{options[:data_path]}/*").each do |p|
+            $logger.debug "p #{p}"
+            if effected
+              next unless File.directory? p
+              if p =~ /tophat_out$/
+                next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
+                options[:align_bam] = "#{p}/accepted_hits.bam"
+                break
+              end
+            else
+              next if File.directory? p
+              if p =~ /VC.ENS.#{d}.s.bam$/
+                next unless Functions.check_if_results_exist(p)
+                options[:align_bam] = p
+                break
+              end
+            end
           end
-          next
+          unless options[:align_bam]
+            $logger.error "Couldn't find bam_file in #{options[:data_path]}"
+            next
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/transcripts.gtf")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} transcripts.gtf stringtie -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp2(d)
+              comp_metrics = get_comp(d)
+              cmd = "bsub -o stats.%J.out -e stats.%J.error stats gtffq -n #{comp_metrics} -t transcripts.gtf #{comp} \\> stats_auto.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = StringTie.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
         end
-        shell_file = "#{options[:out_path]}/run.sh"
-        o = File.open(shell_file,"w")
-        c = Trinity.new("dummy")
-        erubis = Erubis::Eruby.new(c.template(mode))
-        o.puts(erubis.evaluate(options))
-        o.close()
-        Dir.chdir "#{options[:out_path]}"
-        $logger.debug(Dir.pwd)
-        cmd = "bsub < #{shell_file}"
-        jobnumber = submit(cmd,options)
-        options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
-        Dir.chdir current_dir
+      when :trinity
+        $logger.debug("Trinity")
+        for mode in %w{abinitio}
+          if mode == "abinitio"
+            options[:out_path] = "#{options[:data_path]}/trinity"
+          else
+            options[:out_path] = "#{options[:data_path]}/trinity/#{mode}"
+          end
+          Dir.glob("#{options[:data_path]}/*").each do |p|
+            $logger.debug "p #{p}"
+            if effected
+              next unless File.directory? p
+              if p =~ /tophat_out$/
+                next unless Functions.check_if_results_exist("#{p}/accepted_hits.bam")
+                options[:align_bam] = "#{p}/accepted_hits.bam"
+                break
+              end
+            else
+              next if File.directory? p
+              if p =~ /VC.ENS.#{d}.s.bam$/
+                next unless Functions.check_if_results_exist(p)
+                options[:align_bam] = p
+                break
+              end
+            end
+          end
+          unless options[:align_bam]
+            $logger.error "Couldn't find bam_file in #{options[:data_path]}"
+            next
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/trinity_out_dir/RSEM.isoforms.results")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            #unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+            #  Dir.chdir "#{options[:out_path]}"
+            #  comp = get_comp(d)
+            #  Trinity.fix_RSEM_isoforms_results("#{options[:out_path]}/trinity_out_dir/RSEM.isoforms.results",
+            #    "#{options[:out_path]}/RSEM.isoforms.results_fixed",
+            #    "#{options[:out_path]}/trinity_out_dir/gmap_result_transcripts.gff",
+            #    comp)
+            #  cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare #{comp} RSEM.isoforms.results_fixed rsem -v -p \\> compare.txt 2\\> compare_stats.txt"
+            #  $logger.debug cmd
+            #  jobnumber = submit(cmd,options)
+            #  options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+            #  Dir.chdir current_dir
+            #end
+            if mode == "abinitio" && !Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp2(d)
+              comp_metrics = get_comp(d)
+              cmd = "bsub stats gfffq -n #{comp_metrics} -t trinity_out_dir/gmap_result.gff #{comp} \\> stats_auto.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = Trinity.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
+        end
       end
     end
     options[:align_bam] = nil
   end
-  #exit
-  #if fpkm
-  #  rmse, pcc, spcc, mrd = Functions.compare(truth.fpkm, estimated.fpkm)
-  #  if options[:print]
-  #    Functions.print(truth.fpkm, estimated.fpkm)
-  #  end
-  #end
-#
-  #if tpm
-  #  rmse, pcc, spcc, mrd = Functions.compare(truth.tpm, estimated.tpm)
-  #  if options[:print]
-  #    Functions.print(truth.tpm, estimated.tpm)
-  #  end
-  #end
 
   monitor_jobs(options[:jobs])
   $logger.info("All done!")
