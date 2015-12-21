@@ -395,7 +395,6 @@ def run(argv)
     options[:align_bam] = nil
   end
 
-  monitor_jobs(options[:jobs])
   $logger.info("All done!")
 end
 
