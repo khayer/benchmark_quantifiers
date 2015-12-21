@@ -311,7 +311,6 @@ def run(argv)
 
           if Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
             Dir.chdir "#{options[:out_path]}"
-            comp = get_comp(d)
             cmd = "rm rsem*.transcript.sorted.bam* rsem*.transcript.bam*"
             $logger.debug cmd
             submit(cmd,options)
