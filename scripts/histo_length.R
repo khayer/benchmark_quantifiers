@@ -3,7 +3,7 @@ setwd("/Users/hayer/github/benchmark_quantifiers/scripts/")
 
 d = read.csv("../files/transcript_metrics_ENS.PD.txt",sep = "\t")
 head(d)
-hist(log(d$length[d$length<20000]))
+hist(d$length[d$length<6000])
 max(d$length)
 # 106477
 mean(d$length)
@@ -17,3 +17,4 @@ sum(d$length >= 1200)
 dim(d)
 #[1] 87565     9
 tail(sort(d$length),100)
+sum(d$length >= 6000)
