@@ -384,7 +384,7 @@ def run(argv)
             $logger.debug cmd
             submit(cmd,options)
             Dir.chdir "#{options[:data_path]}"
-            cmd = "rm VC.ENS.P.s.bam.+.sam* VC.ENS.P.s.bam.-.sam*"
+            cmd = "rm VC.ENS.P.s.bam.+.sam* VC.ENS.*.s.bam.-.sam*"
             $logger.debug cmd
             submit(cmd,options)
             Dir.chdir current_dir
