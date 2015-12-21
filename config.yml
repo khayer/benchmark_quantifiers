@@ -1,6 +1,6 @@
 # config.yml
 cufflinks: "/home/hayer/itmat/benchmark_quantifiers/tools/cufflinks-2.2.1.Linux_x86_64/cufflinks"
-annotation_gtf: "/project/itmatlab/for_katharina/greg_new/annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF.gtf"
+annotation_gtf: "/project/itmatlab/for_katharina/sim_new/annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF.gtf"
 transcripts_fa: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts.fa"
 genome_fa: "/home/hayer/itmat/benchmark_quantifiers/index/mm9_ucsc_all_numbered_chr.fa"
 # Bowtie
@@ -11,7 +11,7 @@ express: "/home/hayer/itmat/benchmark_quantifiers/tools/express-1.5.1-linux_x86_
 kallisto: "/home/hayer/itmat/benchmark_quantifiers/tools/kallisto_linux-v0.42.3/kallisto"
 kallisto_index: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts_kallisto"
 ireckon: "/home/hayer/itmat/benchmark_quantifiers/tools/IReckon-1.0.8.jar"
-ireckon_ucsc: "/project/itmatlab/for_katharina/greg_new/annotation/mm9_ensebl_ucsc_format_filtered.txt"
+ireckon_ucsc: "/project/itmatlab/for_katharina/sim_new/annotation/mm9_ensebl_ucsc_format_filtered.txt"
 rsem: "/home/hayer/itmat/benchmark_quantifiers/tools/RSEM-1.2.23/rsem-calculate-expression"
 rsem_index: "/home/hayer/itmat/benchmark_quantifiers/index/RSEM_mm9_ucsc_all_numbered_chr_transcripts_INDEX"
 stringtie: "/home/hayer/itmat/benchmark_quantifiers/tools/stringtie-1.1.2.Linux_x86_64/stringtie"
@@ -24,4 +24,4 @@ isoem: "/home/hayer/itmat/benchmark_quantifiers/tools/isoem-1.1.3/bin/isoem"
 isoem_cluster: "/home/hayer/itmat/benchmark_quantifiers/index/cluster_ISOEM_knownToEnsembl.txt"
 gmap: "/home/hayer/tools/gmap-current/bin/gmap"
 isolasso: "/home/hayer/itmat/benchmark_quantifiers/tools/isolasso/bin/runlasso.py"
-isolasso_ref: "/project/itmatlab/for_katharina/greg_new/annotation/ensembl_mm9_nov_2015_filtered.bed_SORTED "
+isolasso_ref: "/project/itmatlab/for_katharina/sim_new/annotation/ensembl_mm9_nov_2015_filtered.bed_SORTED "
