@@ -8,11 +8,11 @@ require "benchmark_quantifiers"
 #mean_FLD = 269.61
 #std_FLD = 39.84
 # MEDIUM
-#mean_FLD = 269.61
-#std_FLD = 39.84
+mean_FLD = 260
+std_FLD = 45
 # SHORT
-mean_FLD = 260.0
-std_FLD = 44.0
+#mean_FLD = 260.0
+#std_FLD = 44.0
 gene_to_ens = {}
 ensg_to_enstrans = {}
 ens_lengths = {}
@@ -54,12 +54,13 @@ File.open("files/ENS.PD.counts_for_FPKM.txt").each do |line|
   #  mean_FLD = transcript_length
   #end
   effective_length = RNAseqFunctions.effective_length(transcript_length, mean_FLD)
-  if effective_length < 0
-    effective_length += std_FLD
-  end
-  if effective_length <= 0
-    effective_length = 1
-  end
+  ##if effective_length < 0
+  ##  effective_length += std_FLD
+  ##end
+  ##if effective_length <= 0
+  ##  effective_length = 1
+  ##end
+  effective_length = transcript_length
   effective_length_per_transcript[gene_to_ens[gene_id]] = effective_length
   #puts effective_length
   #exit
@@ -88,7 +89,7 @@ end
 puts tpm_per_transcript
 
 #out_file = File.open("files/transcript_metrics_ENS.PLD.txt", "w")
-#out_file = File.open("files/transcript_metrics_ENS.PSD.txt", "w")
+#out_file = File.open("files/transcript_metrics_ENS.PSD.txt_new", "w")
 out_file = File.open("files/transcript_metrics_ENS.PD.txt", "w")
 out_file.puts "GENEID\ttrans_id\tgene_id\tlength\t#exons\teffective_length\tFPKM\tTPM\t#isoforms"
 File.open("files/transcript_length.txt").each do |line|
@@ -99,12 +100,13 @@ File.open("files/transcript_length.txt").each do |line|
     out_file.puts "#{line}\t#{effective_length_per_transcript[enstrans]}\t#{fpkm_per_transcript[enstrans]}\t#{tpm_per_transcript[enstrans]}\t#{ensg_to_enstrans[ensg_id].length}"
   else
     effective_length = RNAseqFunctions.effective_length(length.to_i, mean_FLD)
-    if effective_length < 0
-      effective_length += std_FLD
-    end
-    if effective_length < 0
-      effective_length = 1
-    end
+    #if effective_length < 0
+    #  effective_length += std_FLD
+    #end
+    #if effective_length < 0
+    #  effective_length = 1
+    #end
+    effective_length = length.to_i
     out_file.puts "#{line}\t#{effective_length}\t0\t0\t#{ensg_to_enstrans[ensg_id].length}"
   end
 end
