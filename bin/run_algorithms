@@ -52,15 +52,15 @@ $datasets = {
 
 def get_frag_len_metrics(d)
   case
-  when d =~ /L$/ || d =~ /T$/
-    mean_FLD = 269
-    std_FLD = 39
+  when d =~ /L$/ #|| d =~ /T$/
+    mean_FLD = 260
+    std_FLD = 45
   when d =~ /S$/
     mean_FLD = 260
     std_FLD = 44
   else
-    mean_FLD = 269
-    std_FLD = 40
+    mean_FLD = 260
+    std_FLD = 45
   end
   [mean_FLD, std_FLD]
 end
@@ -68,8 +68,9 @@ end
 
 def get_comp(d)
   case
-  when d =~ /L$/ || d =~ /T$/
-    comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PLD.txt"
+  when d =~ /L$/ #|| d =~ /T$/
+    #comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PLD.txt"
+    comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PD.txt"
   when d =~ /S$/
     comp = "~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/files/transcript_metrics_ENS.PSD.txt"
   else
