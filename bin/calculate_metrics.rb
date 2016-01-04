@@ -19,7 +19,7 @@ ens_lengths = {}
 File.open("files/transcript_length.txt").each do |line|
   line.chomp!
   next if line =~ /^GENEID/
-  gene_id, enstrans, ensg_id, length, num_exon = line.split("\t")
+  gene_id, enstrans, ensg_id, length, num_exon, chromosome = line.split("\t")
   gene_to_ens[gene_id] = enstrans
   ensg_to_enstrans[ensg_id] ||= []
   ensg_to_enstrans[ensg_id] << enstrans
