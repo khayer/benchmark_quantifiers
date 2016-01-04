@@ -1,5 +1,6 @@
 lengths = {}
 num_exons = {}
+chromosome = {}
 File.open("../annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF").each do |line|
   line.chomp!
   line =~ /gene_id "(GENE\.\d*)"/
@@ -10,6 +11,7 @@ File.open("../annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF").each
   lengths[id] += fields[4].to_i - fields[3].to_i + 1
   num_exons[id] ||= 0
   num_exons[id] += 1
+  chromosome[id] = fields[0]
 end
 
 #puts lengths["GENE.7"]
@@ -30,5 +32,5 @@ end
 
 puts "GENEID\ttrans_id\tgene_id\tlength\t#exons"
 lengths.each_pair do |key, value|
-  puts "#{key}\t#{mapping[key]}\t#{mapping_ens[mapping[key]]}\t#{value}\t#{num_exons[key]}"
+  puts "#{key}\t#{mapping[key]}\t#{mapping_ens[mapping[key]]}\t#{value}\t#{num_exons[key]}\t#{chromosome[key]}"
 end
