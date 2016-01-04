@@ -30,7 +30,7 @@ File.open("/home/hayer/index/ensembl_mm9_oct_2015_trans2gene.txt").each do |line
   mapping_ens[fields[0]] = fields[1]
 end
 
-puts "GENEID\ttrans_id\tgene_id\tlength\t#exons"
+puts "GENEID\ttrans_id\tgene_id\tlength\t#exons\tchromosome"
 lengths.each_pair do |key, value|
   puts "#{key}\t#{mapping[key]}\t#{mapping_ens[mapping[key]]}\t#{value}\t#{num_exons[key]}\t#{chromosome[key]}"
 end
