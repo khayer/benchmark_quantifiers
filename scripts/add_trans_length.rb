@@ -1,5 +1,5 @@
 lengths = {}
-num_exons = {}
+num_transcripts = {}
 chromosome = {}
 File.open("../annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF").each do |line|
   line.chomp!
@@ -9,8 +9,8 @@ File.open("../annotation/simulator_config_geneinfo_mm9-ensembl-stdchr_GTF").each
   fields = line.split("\t")
   next unless fields[2] == "exon"
   lengths[id] += fields[4].to_i - fields[3].to_i + 1
-  num_exons[id] ||= 0
-  num_exons[id] += 1
+  num_transcripts[id] ||= 0
+  num_transcripts[id] += 1
   chromosome[id] = fields[0]
 end
 
@@ -30,7 +30,7 @@ File.open("/home/hayer/index/ensembl_mm9_oct_2015_trans2gene.txt").each do |line
   mapping_ens[fields[0]] = fields[1]
 end
 
-puts "GENEID\ttrans_id\tgene_id\tlength\t#exons\tchromosome"
+puts "GENEID\ttrans_id\tgene_id\tlength\t#transcripts\tchromosome"
 lengths.each_pair do |key, value|
-  puts "#{key}\t#{mapping[key]}\t#{mapping_ens[mapping[key]]}\t#{value}\t#{num_exons[key]}\t#{chromosome[key]}"
+  puts "#{key}\t#{mapping[key]}\t#{mapping_ens[mapping[key]]}\t#{value}\t#{num_transcripts[key]}\t#{chromosome[key]}"
 end
