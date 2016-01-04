@@ -702,11 +702,71 @@ def run(argv)
           Dir.chdir current_dir
         end
       when :pennseq
-        $logger.debug("pennseq")
-        $logger.info("Pennseq is not implemented yet!")
-        #estimated = Pennseq.new(estimated)
-        #estimated.read_file()
-        #fpkm = true
+        $logger.debug("PennSeq")
+        for mode in %w{default }
+          if mode == "default"
+            options[:out_path] = "#{options[:data_path]}/pennseq"
+          else
+            options[:out_path] = "#{options[:data_path]}/pennseq/#{mode}"
+          end
+          Dir.glob("#{options[:data_path]}/*").each do |p|
+            $logger.debug "p #{p}"
+            if effected
+              next unless File.directory? p
+              if p =~ /tophat_out$/
+                next unless Functions.check_if_results_exist("#{p}/accepted_hits.NO.sam")
+                options[:align_bam] = "#{p}/accepted_hits.NO.sam"
+                break
+              end
+            else
+              next if File.directory? p
+              if p =~ /VC.ENS.#{d}.sam$/
+                next unless Functions.check_if_results_exist(p)
+                options[:align_bam] = p
+                break
+              end
+            end
+          end
+          unless options[:align_bam]
+            $logger.error "Couldn't find sam_file in #{options[:data_path]}"
+            next
+          end
+          begin
+            Dir.mkdir(options[:out_path])
+          rescue SystemCallError
+            if Dir.exist?(options[:out_path])
+              $logger.warn("Directory #{options[:out_path]} exists!")
+            else
+              $logger.error("Can't create directory #{options[:out_path]}!")
+              raise("Trouble creating directory, log for details.")
+            end
+          end
+          if Functions.check_if_results_exist("#{options[:out_path]}/merged_pennseq_out")
+            $logger.warn "Results for #{d} and #{algorithm} already exist. SKIPPING!"
+            unless Functions.check_if_results_exist("#{options[:out_path]}/compare_stats.txt")
+              Dir.chdir "#{options[:out_path]}"
+              comp = get_comp_by_chr(d)
+              cmd = "bsub -o compare.%J.out -e compare.%J.error ~/itmat/benchmark_quantifiers/tools/benchmark_quantifiers/bin/compare -c #{comp} merged_pennseq_out pennseq -v -p \\> compare.txt 2\\> compare_stats.txt"
+              $logger.debug cmd
+              jobnumber = submit(cmd,options)
+              options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+              Dir.chdir current_dir
+            end
+            next
+          end
+          shell_file = "#{options[:out_path]}/run.sh"
+          o = File.open(shell_file,"w")
+          c = PennSeq.new("dummy")
+          erubis = Erubis::Eruby.new(c.template(mode))
+          o.puts(erubis.evaluate(options))
+          o.close()
+          Dir.chdir "#{options[:out_path]}"
+          $logger.debug(Dir.pwd)
+          cmd = "bsub < #{shell_file}"
+          jobnumber = submit(cmd,options)
+          options[:jobs] << Job.new(jobnumber, cmd, "PEND",Dir.pwd)
+          Dir.chdir current_dir
+        end
       when :sailfish
         $logger.debug("Sailfish")
         #for mode in %w{default bias}

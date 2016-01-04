@@ -19,4 +19,20 @@ class Pennseq < FileFormats
     end
   end
 
+  def template(mode = "default")
+    t = "#!/bin/bash -e\n"
+    t += "#BSUB -J pennseq\n"
+    t += "#BSUB -o pennseq.%J.out\n"
+    t += "#BSUB -e pennseq.%J.error\n"
+    t += "#BSUB -n 10\n"
+    case mode
+    when "default"
+
+      t += "for i in chrY\n"
+      t += "do\n"
+      t += "(grep -w $i VC.ENS.P.sam > $i.sam ; echo grepping done for $i; perl <%= @pennseq %> -s ../$i.sam -i <%= @pennseq_index %>  -o chr$i\_pennseq_out\n"
+      t += " quant -i -o <%= @out_path %> -t 10 <%= @fwd_reads %> <%= @rev_reads %>\n"
+    end
+  end
+
 end

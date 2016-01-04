@@ -15,6 +15,9 @@ isolasso_ref: "/project/itmatlab/for_katharina/sim_new/annotation/ensembl_mm9_no
 isolasso: "/home/hayer/itmat/benchmark_quantifiers/tools/isolasso/bin/runlasso.py"
 kallisto_index: "/home/hayer/itmat/benchmark_quantifiers/index/transcripts_kallisto"
 kallisto: "/home/hayer/itmat/benchmark_quantifiers/tools/kallisto_linux-v0.42.3/kallisto"
+pennseq: "/home/hayer/itmat/benchmark_quantifiers/tools/PennSeq/pennseq/pennseq.pl"
+# Index just the base; will need mm9_ensembl_ucsc_format_filtered_pennseq_chrX, mm9_ensembl_ucsc_format_filtered_pennseq_chrY, ...
+pennseq_index: "/home/hayer/itmat/benchmark_quantifiers/tools/PennSeq/mm9_ensembl_ucsc_format_filtered_pennseq"
 rsem_index: "/home/hayer/itmat/benchmark_quantifiers/index/RSEM_mm9_ucsc_all_numbered_chr_transcripts_INDEX"
 rsem: "/home/hayer/itmat/benchmark_quantifiers/tools/RSEM-1.2.23/rsem-calculate-expression"
 sailfish_index: "/home/hayer/itmat/benchmark_quantifiers/index/sailfish_transcripts_index"
