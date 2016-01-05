@@ -380,7 +380,7 @@ def run(argv)
 
           if mode == "abinitio" && Functions.check_if_results_exist("#{options[:out_path]}/stats_auto.txt")
             Dir.chdir "#{options[:out_path]}/trinity_out_dir"
-            cmd = "rm -r Dir_VC.ENS.*.s.bam.*.sam.minC1.gff Trinity-GG.fasta.bowtie.*ebwt Trinity-GG.fasta.RSEM.grp Trinity-GG.fasta.RSEM.seq Trinity-GG.fasta.RSEM.ti Trinity-GG.fasta.RSEM.idx.fa Trinity-GG.fasta.RSEM.transcripts.fa bowtie.bam"
+            cmd = "rm -r Dir_*.s.bam.*.sam.minC1.gff Trinity-GG.fasta.bowtie.*ebwt Trinity-GG.fasta.RSEM.grp Trinity-GG.fasta.RSEM.seq Trinity-GG.fasta.RSEM.ti Trinity-GG.fasta.RSEM.idx.fa Trinity-GG.fasta.RSEM.transcripts.fa bowtie.bam"
             $logger.debug cmd
             submit(cmd,options)
             Dir.chdir "#{options[:data_path]}"
