@@ -30,10 +30,10 @@ class Pennseq < FileFormats
       #TODO
       t += "for i in chrY # chr1 chr2 chr3 chr4 chr5 chr6 chr7 chr8 chr9 chr10 chr11 chr12 chr13 chr14 chr15 chr16 chr17 chr18 chr19 chrX chrY\n"
       t += "do\n"
-      t += "(grep -w $i <%= @align_bam %> > $i.sam ; echo \"grepping done for $i\"; perl <%= @pennseq %> -s $i.sam -i <%= @pennseq_index %>_$i  -o $i\_pennseq_out) &\n"
+      t += "(grep -w $i <%= @align_bam %> > $i.sam ; echo \"grepping done for $i\"; perl <%= @pennseq %> -s $i.sam -i <%= @pennseq_index %>_$i  -o $i.pennseq_out) &\n"
       t += "done\n"
       t += "wait\n"
-      t += "cat chr*_pennseq_out > merged_pennseq_out\n"
+      t += "cat chr*.pennseq_out > merged_pennseq_out\n"
       t += "echo all done\n"
     end
   end
