@@ -25,6 +25,9 @@ class Pennseq < FileFormats
     t += "#BSUB -o pennseq.%J.out\n"
     t += "#BSUB -e pennseq.%J.error\n"
     t += "#BSUB -n 22\n"
+    #MEMORY USAGE:
+    #MAX MEM: 39.1 Gbytes;  AVG MEM: 36.2 Gbytes
+    t += "#BSUB -M 42000\n"
     case mode
     when "default"
       #TODO
