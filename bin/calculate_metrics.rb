@@ -16,6 +16,7 @@ std_FLD = 45
 gene_to_ens = {}
 ensg_to_enstrans = {}
 ens_lengths = {}
+ensg_lengths = {}
 ens_chromosome = {}
 enst_to_ensg = {}
 File.open("files/transcript_length.txt").each do |line|
@@ -26,14 +27,18 @@ File.open("files/transcript_length.txt").each do |line|
   ensg_to_enstrans[ensg_id] ||= []
   ensg_to_enstrans[ensg_id] << enstrans
   ens_lengths[enstrans] = length.to_i
+  ensg_lengths[ensg_id] ||= 0
+  ensg_lengths[ensg_id] = length.to_i unless ensg_lengths[ensg_id] > length.to_i
   enst_to_ensg[enstrans] = ensg_id
   ens_chromosome[enstrans] = chromosome
   #puts gene_to_ens
 end
 
+
 sum_all_counts = 0
 sum_by_chromosome = {}
 sum_by_ensg = {}
+
 #File.open("files/ENS.PLD.counts_for_FPKM.txt").each do |line|
 #File.open("files/ENS.PSD.counts_for_FPKM.txt").each do |line|
 File.open("files/ENS.PD.counts_for_FPKM.txt").each do |line|
@@ -61,6 +66,7 @@ effective_length_per_transcript = {}
 fpkm_sum_over_all_transcripts_by_chr = {}
 fpkm_sum_over_all_transcripts = 0
 abundance = {}
+fpkm_per_gene = {}
 #File.open("files/ENS.PLD.counts_for_FPKM.txt").each do |line|
 #File.open("files/ENS.PSD.counts_for_FPKM.txt").each do |line|
 File.open("files/ENS.PD.counts_for_FPKM.txt").each do |line|
@@ -97,9 +103,17 @@ File.open("files/ENS.PD.counts_for_FPKM.txt").each do |line|
   abundance[gene_to_ens[gene_id]] = (cnt.to_i/2)/sum_by_ensg[enst_to_ensg[gene_to_ens[gene_id]]]
   fpkm_sum_over_all_transcripts_by_chr[ens_chromosome[gene_to_ens[gene_id]]] ||= 0
   fpkm_sum_over_all_transcripts_by_chr[ens_chromosome[gene_to_ens[gene_id]]] += k
+
+  k = RNAseqFunctions.fpkm(sum_by_ensg[enst_to_ensg[gene_to_ens[gene_id]]], ensg_lengths[enst_to_ensg[gene_to_ens[gene_id]]], sum_all_counts)
+  fpkm_per_gene[enst_to_ensg[gene_to_ens[gene_id]]] = k
   #puts fpkm_per_transcript
   #exit
 end
+
+
+puts fpkm_per_gene
+puts fpkm_per_gene["ENSMUSG00000089699"]
+exit
 
 #puts abundance
 #exit
