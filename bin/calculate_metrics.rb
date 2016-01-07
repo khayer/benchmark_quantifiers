@@ -111,9 +111,9 @@ File.open("files/ENS.PD.counts_for_FPKM.txt").each do |line|
 end
 
 
-puts fpkm_per_gene
-puts fpkm_per_gene["ENSMUSG00000089699"]
-exit
+#puts fpkm_per_gene
+#uts fpkm_per_gene["ENSMUSG00000089699"]
+#exit
 
 #puts abundance
 #exit
